@@ -1,10 +1,10 @@
 {
-  "name": "egui Template PWA",
-  "short_name": "egui-template-pwa",
+  "name": "Reasypub",
+  "short_name": "Reasypub",
   "icons": [
     {
-      "src": "./assets/icon-256.png",
-      "sizes": "256x256",
+      "src": "./assets/icon.png",
+      "sizes": "215x213",
       "type": "image/png"
     },
     {
@@ -12,17 +12,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "./assets/icon-1024.png",
-      "sizes": "1024x1024",
-      "type": "image/png"
     }
   ],
-  "lang": "en-US",
+  "lang": "zh-CN",
   "id": "/index.html",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "white",
-  "theme_color": "white"
+  "background_color": "#f8f9fa",
+  "theme_color": "#f8f9fa"
 }

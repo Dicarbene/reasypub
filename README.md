@@ -1,87 +1,318 @@
-# eframe template
+# Reasypub
 
-[![dependency status](https://deps.rs/repo/github/emilk/eframe_template/status.svg)](https://deps.rs/repo/github/emilk/eframe_template)
-[![Build Status](https://github.com/emilk/eframe_template/workflows/CI/badge.svg)](https://github.com/emilk/eframe_template/actions?workflow=CI)
+[![CI](https://github.com/Dicarbene/reasypub/actions/workflows/rust.yml/badge.svg)](https://github.com/Dicarbene/reasypub/actions/workflows/rust.yml)
+[![dependency status](https://deps.rs/repo/github/Dicarbene/reasypub/status.svg)](https://deps.rs/repo/github/Dicarbene/reasypub)
 
-This is a template repo for [eframe](https://github.com/emilk/egui/tree/master/crates/eframe), a framework for writing apps using [egui](https://github.com/emilk/egui/).
+Reasypub 是一款将 TXT 文本转换为 EPUB 的桌面应用，提供分章识别、章节编辑、封面/字体/样式配置、插图管理等功能，支持中英双语界面与明暗主题。
 
-The goal is for this to be the simplest way to get started writing a GUI app in Rust.
+Reasypub is a desktop app that converts TXT files into EPUB, with chapter splitting, chapter editing, cover/font/style customization, illustration management, bilingual UI, and light/dark themes.
 
-You can compile your app natively or for the web, and share it using Github Pages.
+---
 
-## Getting started
+## 主要特性 / Key Features
 
-Start by clicking "Use this template" at https://github.com/emilk/eframe_template/ or follow [these instructions](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template).
+### 1) 转换与分章 / Conversion & Chapter Split
+- **TXT → EPUB** 一键转换 / One-click TXT → EPUB
+- **分章方式** / Split methods:
+  - **Regex（正则）**：输入自定义正则表达式 / Enter custom regex
+  - **Custom Config（从文件加载）**：读取正则配置文件 / Load regex from file
+  - **Simple Rules（简易规则）**：基于章节标题启发式 / Heuristic title splitting
+- **内置中文规则**：正则为空时使用内置中文章节识别 / Built-in CN rule if regex is empty
+- **章节预览**：在转换前查看章节数量与标题 / Preview chapter count and titles
 
-Change the name of the crate: Choose a good name for your project, and change the name to it in:
-* `Cargo.toml`
-    * Change the `package.name` from `eframe_template` to `your_crate`.
-    * Change the `package.authors`
-* `main.rs`
-    * Change `eframe_template::TemplateApp` to `your_crate::TemplateApp`
-* `index.html`
-    * Change the `<title>eframe template</title>` to `<title>your_crate</title>`. optional.
-* `assets/sw.js`
-  * Change the `'./eframe_template.js'` to `./your_crate.js` (in `filesToCache` array)
-  * Change the `'./eframe_template_bg.wasm'` to `./your_crate_bg.wasm` (in `filesToCache` array)
+### 2) 章节编辑 / Chapter Editor
+- 打开章节编辑器查看与编辑章节 / Open editor to edit chapters
+- 支持章节增删、排序、标题与内容编辑 / Add/remove/reorder/edit
+- 章节可上移/下移、删除、清空 / Move up/down, delete, clear all
+- 文本或规则变更后提示“过期”/ Shows “stale” when source changes
+- 章节编辑结果可直接用于转换 / Use edited chapters for conversion
 
-Alternatively, you can run `fill_template.sh` which will ask for the needed names and email and perform the above patches for you. This is particularly useful if you clone this repository outside GitHub and hence cannot make use of its
-templating function.
+### 3) 文本编辑 / Text Editor
+- 内置 TXT 编辑器，可直接编辑源文件 / Built-in TXT editor for quick edits
+- 保存会写回原文件 / Save writes back to the source file
 
-### Learning about egui
+### 4) 书籍信息 / Book Metadata
+- 书名、作者、语言、出版社、ISBN、分类、出版日期、简介
+- 未填写时自动使用占位（如未命名/佚名）/ Falls back to placeholders
 
-`src/app.rs` contains a simple example app. This is just to give some inspiration - most of it can be removed if you like.
+### 5) 封面与插图 / Cover & Illustrations
+- 选择封面图片（jpg/png/webp）/ Choose cover image
+- 封面大小限制：>10MB 提示过大 / Cover size limit >10MB
+- 插图管理：单张添加/批量导入 / Add single or batch import
+- 插图可填写说明（caption）/ Optional captions for images
+- 可生成插图章节 / Generate illustration gallery chapter
 
-The official egui docs are at <https://docs.rs/egui>. If you prefer watching a video introduction, check out <https://www.youtube.com/watch?v=NtUkr_z7l84>. For inspiration, check out the [the egui web demo](https://emilk.github.io/egui/index.html) and follow the links in it to its source code.
+### 6) 排版与字体 / Layout & Fonts
+- 行高、段间距、首行缩进、字体大小、字体颜色
+- 字体嵌入：支持 ttf/otf（会嵌入到 EPUB）/ Embed custom fonts (included in EPUB)
+- 多种 CSS 模板：Classic/Modern/Clean/Elegant/Folio/Fantasy/Minimal
+- 模板 + 自定义 CSS 叠加 / Template + custom CSS
+- 自定义 CSS 会追加到模板之后 / Custom CSS is appended after template CSS
 
-### Testing locally
+### 7) 输出与命名 / Output & Naming
+- 输出路径可配置 / Output folder configurable
+- 文件名模板 / Filename template
+  - 变量：`{书名}` / `{作者}` / `{日期}`
+- 转换完成弹窗：显示输出路径，可打开文件或文件夹
 
-Make sure you are using the latest version of stable rust by running `rustup update`.
+### 8) 多语言与主题 / i18n & Theme
+- 中文/English 界面
+- 明暗主题切换 / Light/Dark themes
+- 可插入目录页（Inline TOC）/ Optional inline TOC page
 
-`cargo run --release`
+---
 
-On Linux you need to first run:
+## UI 导览 / UI Overview
 
-`sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev`
+**顶部栏 / Top Bar**
+- 主题切换（明暗）/ Theme switch (Light/Dark)
+- 语言切换（中文/English）/ Language switch
 
-On Fedora Rawhide you need to run:
+**左侧导航 / Left Sidebar**
+- 模块切换：章节 / 版式 / 字体 / 出版信息 / CSS / 插图 / 杂项
+- 快捷操作：编辑 TXT、章节编辑器、插图章节开关、目录页开关
 
-`dnf install clang clang-devel clang-tools-extra libxkbcommon-devel pkg-config openssl-devel libxcb-devel gtk3-devel atk fontconfig-devel`
+**中间主区域 / Main Panel**
+- 基础信息：TXT 选择、封面选择、书名/作者
+- 各功能面板设置：分章、排版、字体、CSS、插图、出版信息、输出配置
 
-### Web Locally
+**右侧预览 / Right Panel**
+- 封面预览
+- 导出摘要（书名、作者、输出路径、模板、插图数量）
 
-You can compile your app to [WASM](https://en.wikipedia.org/wiki/WebAssembly) and publish it as a web page.
+**转换结果弹窗 / Result Modal**
+- 输出文件路径
+- 打开文件/文件夹按钮
 
-We use [Trunk](https://trunkrs.dev/) to build for web target.
-1. Install the required target with `rustup target add wasm32-unknown-unknown`.
-2. Install Trunk with `cargo install --locked trunk`.
-3. Run `trunk serve` to build and serve on `http://127.0.0.1:8080`. Trunk will rebuild automatically if you edit the project.
-4. Open `http://127.0.0.1:8080/index.html#dev` in a browser. See the warning below.
+---
 
-> `assets/sw.js` script will try to cache our app, and loads the cached version when it cannot connect to server allowing your app to work offline (like PWA).
-> appending `#dev` to `index.html` will skip this caching, allowing us to load the latest builds during development.
+## 快速使用流程 / Quick Workflow
 
-### Web Deploy
-1. Just run `trunk build --release`.
-2. It will generate a `dist` directory as a "static html" website
-3. Upload the `dist` directory to any of the numerous free hosting websites including [GitHub Pages](https://docs.github.com/en/free-pro-team@latest/github/working-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
-4. we already provide a workflow that auto-deploys our app to GitHub pages if you enable it.
-> To enable Github Pages, you need to go to Repository -> Settings -> Pages -> Source -> set to `gh-pages` branch and `/` (root).
->
-> If `gh-pages` is not available in `Source`, just create and push a branch called `gh-pages` and it should be available.
->
-> If you renamed the `main` branch to something else (say you re-initialized the repository with `master` as the initial branch), be sure to edit the github workflows `.github/workflows/pages.yml` file to reflect the change
-> ```yml
-> on:
->   push:
->     branches:
->       - <branch name>
-> ```
+1. 选择 TXT 文件 / Select TXT file  
+2. 选择分章方式并预览章节 / Pick split method and preview  
+3. （可选）打开章节编辑器进行编辑 / (Optional) edit chapters  
+4. 填写书名/作者/出版信息 / Fill metadata  
+5. 选择封面、字体、模板、CSS / Choose cover/font/template/CSS  
+6. 添加插图并填写说明 / Add illustrations and captions  
+7. 设置输出路径与文件名模板 / Set output folder and filename  
+8. 选择是否插入目录页 / Toggle inline TOC  
+9. 开始转换并查看结果 / Convert and open output  
 
-You can test the template app at <https://emilk.github.io/eframe_template/>.
+---
 
-## Updating egui
+## 分章策略说明 / Split Strategy Details
 
-As of 2023, egui is in active development with frequent releases with breaking changes. [eframe_template](https://github.com/emilk/eframe_template/) will be updated in lock-step to always use the latest version of egui.
+### Regex（正则）
+适合规则明确的文本，如“CHAPTER 1”或“第1章”。  
+Best for consistent chapter headings.
 
-When updating `egui` and `eframe` it is recommended you do so one version at the time, and read about the changes in [the egui changelog](https://github.com/emilk/egui/blob/master/CHANGELOG.md) and [eframe changelog](https://github.com/emilk/egui/blob/master/crates/eframe/CHANGELOG.md).
+**示例 / Examples**
+```text
+英文章节 / English:
+(?m)^CHAPTER\\s+\\d+
+
+中文章节 / Chinese:
+(?m)^第[0-9一二三四五六七八九十零〇○百千万两]+[章节回部节集卷]
+```
+
+**提示 / Tips**
+- 使用 `(?m)` 开启多行模式 / Use `(?m)` for multi-line mode
+- 规则过严可能导致“未检测到章节” / Overly strict rules may find none
+
+### Custom Config（从文件加载）
+将正则放在文件中，便于复用多个项目。  
+Load regex from file for reuse.
+
+**文件格式 / File format**
+- 纯文本，仅包含正则表达式一行  
+- Plain text with a single regex pattern
+- 可随时点击“验证配置”检查是否可用  
+  Use “Validate config” to check the regex
+
+### Simple Rules（简易规则）
+启发式识别中文章节标题（如“第X章”或“序章”）。  
+Heuristic rules for common CN chapter titles.
+- 支持序章/序言/楔子/番外等标记  
+  Supports common preface/extra markers
+
+---
+
+## 章节编辑器操作细节 / Chapter Editor Details
+
+**刷新 / Refresh**
+- 根据当前分章方式重新生成章节列表  
+- Regenerates chapter list with current split method
+
+**过期提示 / Stale warning**
+- 当 TXT 内容或分章规则变化时出现  
+- Appears when text or split rules change
+
+**排序 / Reorder**
+- 使用“上移/下移”调整章节顺序  
+- Use Up/Down buttons to reorder
+
+**编辑 / Edit**
+- 可直接编辑章节标题与正文  
+- Edit title and content inline
+
+**用于转换 / Use for conversion**
+- 勾选“使用章节编辑结果”后，转换使用编辑内容  
+- When enabled, conversion uses edited chapters
+
+---
+
+## 样式模板说明 / Style Templates
+
+- **Classic**：传统衬线排版、章节装饰与首字下沉风格  
+  Classic serif layout with ornamental chapter headers and drop-cap styling.
+- **Modern**：更清爽的标题与正文布局  
+  Cleaner modern headings and body text.
+- **Clean**：简洁、轻量的排版  
+  Minimal, lightweight typography.
+- **Elegant**：更强调优雅衬线与字距  
+  Emphasized serif elegance and spacing.
+- **Folio**：纸质书风格装饰（装饰线条）  
+  Book-like folio ornaments and borders.
+- **Fantasy**：幻想风模板，包含内置装饰素材  
+  Fantasy theme with built-in decorative assets.
+- **Minimal**：接近默认样式，适合纯文本阅读  
+  Near-default styling for plain reading.
+
+---
+
+## 资源与限制 / Resources & Limits
+
+- 封面支持常见图片格式 / jpg/png/webp
+- 封面大于 10MB 提示过大 / >10MB warning
+- 未选择封面时自动生成文本封面 / Auto text cover
+- TXT 推荐 UTF-8 编码 / UTF-8 recommended
+- 文件名模板自动补全 `.epub` / `.epub` is auto-appended if missing
+
+---
+
+## 常见问题 / FAQ
+
+**未检测到章节 / No chapters detected**
+- 检查文本是否有明显章节标题  
+- 尝试使用 Regex 或 Custom Config  
+
+**正则错误 / Regex error**
+- 检查正则语法  
+- 可先使用在线正则工具验证  
+
+**章节预览过期（stale）/ Preview stale**
+- 文本或规则变更后需要重新预览  
+- 重新点击预览或刷新章节编辑器  
+
+**读取失败 / Read failed**
+- 确保 TXT 为 UTF-8  
+- 检查文件权限或占用  
+
+---
+
+## 本地运行 / Local Run
+
+### 环境 / Requirements
+- Rust 1.92+
+
+### 运行 / Run
+
+```bash
+cargo run --release
+```
+
+### Linux 依赖 / Linux dependencies
+
+```bash
+sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
+```
+
+---
+
+## Web 版（Trunk）/ Web (Trunk)
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo install --locked trunk
+trunk serve
+```
+
+发布构建 / Release build:
+
+```bash
+trunk build --release
+```
+
+---
+
+## 开发者说明 / Developer Notes
+
+### 常用命令 / Common Commands
+
+```bash
+cargo run --release
+cargo test --lib
+cargo fmt --all -- --check
+cargo clippy -- -D warnings
+trunk build
+```
+
+完整 CI 风格检查 / Full CI-like checks:
+
+```bash
+./check.sh
+```
+
+### 代码结构 / Code Layout
+
+- `src/app.rs`：主 UI 与状态管理 / Main UI and state
+- `src/conversion.rs`：转换流程 / Conversion pipeline
+- `src/epubworker.rs`：EPUB 生成 / EPUB builder
+- `src/components/chapter_editor.rs`：章节编辑器 / Chapter editor
+- `src/i18n.rs`：多语言文案 / i18n strings
+
+### CI 说明 / CI Notes
+
+- `.github/workflows/rust.yml`：check / wasm / test / fmt / clippy / trunk / cross
+- `.github/workflows/pages.yml`：GitHub Pages（Trunk build + deploy）
+
+---
+
+## 贡献指南 / Contributing
+
+### Issue / PR 流程
+1. 提交 Issue 描述问题/需求  
+2. Fork 仓库并创建分支  
+3. 提交变更并发起 PR  
+
+1. Open an issue  
+2. Fork and create a branch  
+3. Submit changes and open a PR  
+
+### 分支与提交建议 / Branch & Commit Tips
+- 分支名：`fix/xxx`、`feat/xxx`、`docs/xxx`
+- 提交信息简洁清晰  
+
+### 测试建议 / Testing
+
+```bash
+cargo test --lib
+```
+
+完整检查 / Full:
+
+```bash
+./check.sh
+```
+
+### 代码风格 / Code Style
+- 使用 `rustfmt`  
+- 保持 `clippy` 无警告  
+
+---
+
+## License
+
+Licensed under either of:
+- Apache License, Version 2.0 (`LICENSE-APACHE`)
+- MIT license (`LICENSE-MIT`)
