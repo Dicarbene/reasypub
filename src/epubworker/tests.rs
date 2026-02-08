@@ -1,4 +1,5 @@
 use super::*;
+use crate::TocOptions;
 use bytes::Bytes;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -33,6 +34,21 @@ fn zip_read_to_string(path: &Path, suffix: &str) -> String {
         }
     }
     panic!("missing entry with suffix {suffix}");
+}
+
+fn zip_read_to_string_optional(path: &Path, suffix: &str) -> Option<String> {
+    let file = File::open(path).expect("open epub");
+    let mut archive = ZipArchive::new(file).expect("zip");
+    for idx in 0..archive.len() {
+        let mut entry = archive.by_index(idx).expect("entry");
+        if entry.name().ends_with(suffix) {
+            let mut content = String::new();
+            use std::io::Read;
+            entry.read_to_string(&mut content).expect("read entry");
+            return Some(content);
+        }
+    }
+    None
 }
 
 #[test]
@@ -295,7 +311,10 @@ fn build_epub_writes_file() {
         chapter_header_image: None,
         chapter_header_fullbleed: false,
         include_images_section: false,
-        inline_toc: false,
+        toc_options: TocOptions {
+            insert_toc_page: false,
+            ..Default::default()
+        },
     };
     let chapters = vec![ChapterDraft {
         title: "Chapter 1".to_string(),
@@ -349,7 +368,7 @@ fn build_epub_contains_assets() {
         chapter_header_image: None,
         chapter_header_fullbleed: false,
         include_images_section: true,
-        inline_toc: true,
+        toc_options: TocOptions::default(),
     };
     let chapters = vec![ChapterDraft {
         title: "Chapter 1".to_string(),
@@ -408,7 +427,10 @@ fn build_epub_contains_chapter_header_image() {
         chapter_header_image: Some(header),
         chapter_header_fullbleed: true,
         include_images_section: false,
-        inline_toc: false,
+        toc_options: TocOptions {
+            insert_toc_page: false,
+            ..Default::default()
+        },
     };
     let chapters = vec![ChapterDraft {
         title: "Chapter 1".to_string(),
@@ -451,7 +473,10 @@ fn build_epub_contains_fantasy_assets() {
         chapter_header_image: None,
         chapter_header_fullbleed: false,
         include_images_section: false,
-        inline_toc: false,
+        toc_options: TocOptions {
+            insert_toc_page: false,
+            ..Default::default()
+        },
     };
     let chapters = vec![ChapterDraft {
         title: "第十二章 星落".to_string(),
@@ -514,7 +539,10 @@ fn build_epub_writes_metadata() {
         chapter_header_image: None,
         chapter_header_fullbleed: false,
         include_images_section: false,
-        inline_toc: false,
+        toc_options: TocOptions {
+            insert_toc_page: false,
+            ..Default::default()
+        },
     };
     let chapters = vec![ChapterDraft {
         title: "Chapter 1".to_string(),
@@ -550,7 +578,10 @@ fn build_epub_skips_empty_metadata() {
         chapter_header_image: None,
         chapter_header_fullbleed: false,
         include_images_section: false,
-        inline_toc: false,
+        toc_options: TocOptions {
+            insert_toc_page: false,
+            ..Default::default()
+        },
     };
     let chapters = vec![ChapterDraft {
         title: "Chapter 1".to_string(),
@@ -587,7 +618,10 @@ fn build_epub_skips_images_section_when_disabled() {
         chapter_header_image: None,
         chapter_header_fullbleed: false,
         include_images_section: false,
-        inline_toc: false,
+        toc_options: TocOptions {
+            insert_toc_page: false,
+            ..Default::default()
+        },
     };
     let chapters = vec![ChapterDraft {
         title: "Chapter 1".to_string(),
@@ -609,6 +643,131 @@ fn build_epub_skips_images_section_when_disabled() {
 }
 
 #[test]
+fn build_epub_uses_custom_toc_title_override() {
+    let dir = unique_temp_dir("reasypub-toc-title-custom");
+    let options = EpubBuildOptions {
+        book_info: BookInfo {
+            language: "en".to_string(),
+            ..Default::default()
+        },
+        output_dir: dir.clone(),
+        filename_template: "toc_title_custom".to_string(),
+        style: TextStyle::default(),
+        cover: None,
+        images: Vec::new(),
+        font: None,
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
+        include_images_section: false,
+        toc_options: TocOptions {
+            insert_toc_page: true,
+            toc_title_override: "Contents (Custom)".to_string(),
+            include_gallery_in_toc: true,
+        },
+    };
+    let chapters = vec![ChapterDraft {
+        title: "Chapter 1".to_string(),
+        content: "Hello".to_string(),
+    }];
+
+    let output = build_epub(&chapters, &options).expect("build epub");
+    let opf = zip_read_to_string(Path::new(&output), ".opf");
+    assert!(opf.contains("Contents (Custom)"));
+
+    let nav = zip_read_to_string(Path::new(&output), "nav.xhtml");
+    assert!(nav.contains("Contents (Custom)"));
+
+    let _ = std::fs::remove_file(&output);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn build_epub_uses_default_toc_title_when_override_empty() {
+    let dir = unique_temp_dir("reasypub-toc-title-default");
+    let options = EpubBuildOptions {
+        book_info: BookInfo {
+            language: "en".to_string(),
+            ..Default::default()
+        },
+        output_dir: dir.clone(),
+        filename_template: "toc_title_default".to_string(),
+        style: TextStyle::default(),
+        cover: None,
+        images: Vec::new(),
+        font: None,
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
+        include_images_section: false,
+        toc_options: TocOptions {
+            insert_toc_page: true,
+            toc_title_override: String::new(),
+            include_gallery_in_toc: true,
+        },
+    };
+    let chapters = vec![ChapterDraft {
+        title: "Chapter 1".to_string(),
+        content: "Hello".to_string(),
+    }];
+
+    let output = build_epub(&chapters, &options).expect("build epub");
+    let opf = zip_read_to_string(Path::new(&output), ".opf");
+    assert!(opf.contains("Table Of Contents"));
+
+    let nav = zip_read_to_string(Path::new(&output), "nav.xhtml");
+    assert!(nav.contains("Table Of Contents"));
+
+    let _ = std::fs::remove_file(&output);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn build_epub_can_exclude_gallery_from_toc() {
+    let dir = unique_temp_dir("reasypub-gallery-toc-off");
+    let options = EpubBuildOptions {
+        book_info: BookInfo {
+            language: "en".to_string(),
+            ..Default::default()
+        },
+        output_dir: dir.clone(),
+        filename_template: "gallery_toc_off".to_string(),
+        style: TextStyle::default(),
+        cover: None,
+        images: vec![ImageAsset {
+            name: "gallery.png".to_string(),
+            bytes: Bytes::from_static(b"img"),
+            mime: "image/png".to_string(),
+            caption: Some("Gallery".to_string()),
+        }],
+        font: None,
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
+        include_images_section: true,
+        toc_options: TocOptions {
+            insert_toc_page: true,
+            toc_title_override: String::new(),
+            include_gallery_in_toc: false,
+        },
+    };
+    let chapters = vec![ChapterDraft {
+        title: "Chapter 1".to_string(),
+        content: "Hello".to_string(),
+    }];
+
+    let output = build_epub(&chapters, &options).expect("build epub");
+    let entries = zip_entries(Path::new(&output));
+    assert!(entries.iter().any(|name| name.ends_with("images.xhtml")));
+
+    let nav = zip_read_to_string(Path::new(&output), "nav.xhtml");
+    assert!(!nav.contains("images.xhtml"));
+
+    let ncx = zip_read_to_string_optional(Path::new(&output), "toc.ncx").unwrap_or_default();
+    assert!(!ncx.contains("images.xhtml"));
+
+    let _ = std::fs::remove_file(&output);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn build_epub_rejects_empty_chapters() {
     let dir = unique_temp_dir("reasypub-empty");
     let options = EpubBuildOptions {
@@ -622,7 +781,10 @@ fn build_epub_rejects_empty_chapters() {
         chapter_header_image: None,
         chapter_header_fullbleed: false,
         include_images_section: false,
-        inline_toc: false,
+        toc_options: TocOptions {
+            insert_toc_page: false,
+            ..Default::default()
+        },
     };
     let err = build_epub(&[], &options).expect_err("error");
     match err {

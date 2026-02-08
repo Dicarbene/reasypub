@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use epub_builder::{EpubBuilder, EpubContent, ReferenceType, ZipLibrary};
 
-use crate::{BookInfo, ChapterDraft, CssTemplate, FontAsset, ImageAsset, TextStyle};
+use crate::{BookInfo, ChapterDraft, CssTemplate, FontAsset, ImageAsset, TextStyle, TocOptions};
 
 mod assets;
 mod css;
@@ -65,7 +65,7 @@ pub struct EpubBuildOptions {
     pub chapter_header_image: Option<ImageAsset>,
     pub chapter_header_fullbleed: bool,
     pub include_images_section: bool,
-    pub inline_toc: bool,
+    pub toc_options: TocOptions,
 }
 
 pub fn build_epub(
@@ -91,12 +91,17 @@ pub fn build_epub(
     add_optional_metadata(&mut builder, "title", &options.book_info.title)?;
     add_optional_metadata(&mut builder, "lang", &options.book_info.language)?;
     let lang = options.book_info.language.trim();
-    let toc_name = if lang.is_empty() || lang.starts_with("zh") {
-        "目录"
+    let toc_name = if options.toc_options.toc_title_override.trim().is_empty() {
+        if lang.is_empty() || lang.starts_with("zh") {
+            "目录"
+        } else {
+            "Table Of Contents"
+        }
+        .to_string()
     } else {
-        "Table Of Contents"
+        options.toc_options.toc_title_override.trim().to_string()
     };
-    add_optional_metadata(&mut builder, "toc_name", toc_name)?;
+    add_optional_metadata(&mut builder, "toc_name", &toc_name)?;
     add_optional_metadata(&mut builder, "subject", &options.book_info.category)?;
     add_optional_metadata(&mut builder, "description", &options.book_info.description)?;
     add_optional_meta_tag(&mut builder, "publisher", &options.book_info.publisher);
@@ -155,7 +160,7 @@ pub fn build_epub(
         )?;
     }
 
-    if options.inline_toc {
+    if options.toc_options.insert_toc_page {
         builder.inline_toc();
     }
 
@@ -180,11 +185,12 @@ pub fn build_epub(
     if options.include_images_section && !options.images.is_empty() {
         let gallery_title = gallery_title(language);
         let html = render_gallery(&options.images, language, gallery_title);
-        builder.add_content(
-            EpubContent::new("images.xhtml", html.as_bytes())
-                .title(gallery_title)
-                .reftype(ReferenceType::Text),
-        )?;
+        let mut content =
+            EpubContent::new("images.xhtml", html.as_bytes()).reftype(ReferenceType::Text);
+        if options.toc_options.include_gallery_in_toc {
+            content = content.title(gallery_title);
+        }
+        builder.add_content(content)?;
     }
 
     builder.generate(writer)?;

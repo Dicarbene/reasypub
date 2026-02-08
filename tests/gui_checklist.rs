@@ -26,6 +26,7 @@ fn gui_smoke_layout() {
     harness.get_by_label(tr(Key::QuickActions));
     harness.get_by_label(tr(Key::CoverPreview));
     harness.get_by_label(tr(Key::ExportSummary));
+    harness.get_by_label(tr(Key::LineHeight));
 }
 
 #[test]
@@ -51,8 +52,8 @@ fn gui_panel_navigation() {
     let mut harness = new_harness();
 
     let panels = [
-        (Key::PanelChapters, Key::SplitMethod),
         (Key::PanelLayout, Key::LineHeight),
+        (Key::PanelChapters, Key::SplitMethod),
         (Key::PanelFonts, Key::FontSize),
         (Key::PanelPublishInfo, Key::Publisher),
         (Key::PanelCss, Key::CustomCss),
@@ -67,6 +68,55 @@ fn gui_panel_navigation() {
         harness.run();
         harness.get_by_label(tr(expected));
     }
+
+    harness
+        .get_by_role_and_label(Role::Button, tr(Key::PanelCss))
+        .click();
+    harness.run();
+    assert!(
+        harness
+            .query_by_label(tr(Key::ChapterHeaderImage))
+            .is_none()
+    );
+
+    harness
+        .get_by_role_and_label(Role::Button, tr(Key::PanelImages))
+        .click();
+    harness.run();
+    harness.get_by_label(tr(Key::ChapterHeaderImage));
+    harness.get_by_label(tr(Key::ChapterHeaderFullBleed));
+}
+
+#[test]
+fn gui_template_i18n_labels_present_in_both_locales() {
+    let mut harness = new_harness();
+    let zh_template = t(Locale::Zh, Key::Template);
+    let zh_classic_desc = t(Locale::Zh, Key::StyleClassicDesc);
+    let en_template = t(Locale::En, Key::Template);
+    let en_classic_desc = t(Locale::En, Key::StyleClassicDesc);
+
+    harness
+        .get_by_role_and_label(Role::Button, t(Locale::Zh, Key::PanelLayout))
+        .click();
+    harness.run();
+    harness.get_by_label(zh_template);
+    harness.get_by_label(zh_classic_desc);
+
+    harness
+        .get_by(|node| {
+            node.role() == Role::ComboBox && node.value() == Some(Locale::Zh.label().to_string())
+        })
+        .click();
+    harness.run();
+    harness.get_by_label(Locale::En.label()).click();
+    harness.run();
+
+    harness
+        .get_by_role_and_label(Role::Button, t(Locale::En, Key::PanelLayout))
+        .click();
+    harness.run();
+    harness.get_by_label(en_template);
+    harness.get_by_label(en_classic_desc);
 }
 
 #[test]

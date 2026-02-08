@@ -1,6 +1,6 @@
 [package]
 name = "reasypub"
-version = "0.9.0-rc.1"
+version = "0.95.0"
 authors = ["Dicarbene <palytoxin@foxmail.com>"]
 edition = "2024"
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
@@ -44,6 +44,9 @@ uuid = { version = "1", features = ["js"] }
 egui_kittest = { version = "0.33.3", features = ["eframe", "snapshot", "wgpu"] }
 zip = "6.0.0"
 encoding_rs = "0.8.35"
+
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winresource = "0.1.30"
 
 [profile.release]
 opt-level = 2 # fast and small wasm

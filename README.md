@@ -9,8 +9,8 @@ Reasypub is a desktop app that converts TXT files into EPUB, with chapter splitt
 
 ## Version Lifecycle
 
-- Current milestone: `0.9.0-rc.1` (release candidate).
-- RC goal: collect small-scope desktop + web feedback and eliminate crash-class defects.
+- Current milestone: `0.95.0`.
+- `0.95.0` goal: stabilize TOC configuration and conversion quality in desktop + web builds.
 - `1.0.0` gate: all automated checks green, no open P0/P1 issues, and manual regression passed.
 - Release governance docs:
   - `CHANGELOG.md`
@@ -55,16 +55,22 @@ Reasypub is a desktop app that converts TXT files into EPUB, with chapter splitt
 ### 6) 排版与字体 / Layout & Fonts
 - 行高、段间距、首行缩进、字体大小、字体颜色
 - 字体嵌入：支持 ttf/otf（会嵌入到 EPUB）/ Embed custom fonts (included in EPUB)
+- Layout panel is now first in the sidebar and selected by default.
 - 多种 CSS 模板：Classic/Modern/Clean/Elegant/Folio/Fantasy/Minimal
 - 模板 + 自定义 CSS 叠加 / Template + custom CSS
 - 自定义 CSS 会追加到模板之后 / Custom CSS is appended after template CSS
 - 章头图（全书统一，可选全屏）/ Global chapter header image with optional full-bleed
+- Chapter header image controls are now in the Illustrations panel.
 - 段落标注 `[class=...]` 与额外 class 输入 / Paragraph class markers + extra class fields
 
 ### 7) 输出与命名 / Output & Naming
 - 输出路径可配置 / Output folder configurable
 - 文件名模板 / Filename template
   - 变量：`{书名}` / `{作者}` / `{日期}`
+- 目录可选配置 / Optional TOC settings
+  - 生成目录页开关 / Insert TOC page toggle
+  - 目录标题自定义（留空自动按语言默认） / Custom TOC title (empty => language default)
+  - 插图章节是否显示在目录中 / Include gallery chapter in TOC
 - 转换完成弹窗：显示输出路径，可打开文件或文件夹
 
 ### 8) 多语言与主题 / i18n & Theme
@@ -81,6 +87,7 @@ Reasypub is a desktop app that converts TXT files into EPUB, with chapter splitt
 - 语言切换（中文/English）/ Language switch
 
 **左侧导航 / Left Sidebar**
+- Layout-first order: Layout / Chapters / Fonts / Publish Info / CSS / Images / Misc.
 - 模块切换：章节 / 版式 / 字体 / 出版信息 / CSS / 插图 / 杂项
 - 快捷操作：编辑 TXT、章节编辑器、插图章节开关、目录页开关
 
@@ -117,7 +124,7 @@ Reasypub is a desktop app that converts TXT files into EPUB, with chapter splitt
 5. 选择封面、字体、模板、CSS / Choose cover/font/template/CSS  
 6. 添加插图并填写说明 / Add illustrations and captions  
 7. 设置输出路径与文件名模板 / Set output folder and filename  
-8. 选择是否插入目录页 / Toggle inline TOC  
+8. 配置目录（目录页开关、标题、插图章节是否进目录） / Configure TOC page/title/gallery visibility  
 9. 开始转换并查看结果 / Convert and open output  
 
 ---
@@ -199,6 +206,11 @@ Heuristic rules for common CN chapter titles.
   Fantasy theme with built-in decorative assets.
 - **Minimal**：接近默认样式，适合纯文本阅读  
   Near-default styling for plain reading.
+
+### Localized Template Labels
+
+- Zh: Classic-style Chinese labels are shown in Chinese UI.
+- En: Classic Serif / Modern Clean / Clean / Elegant / Folio / Fantasy / Minimal
 
 ---
 

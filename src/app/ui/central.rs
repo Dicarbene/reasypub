@@ -380,23 +380,31 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                             );
                             ui.label(format!("{:.1}", app.text_style.text_indent));
                         });
-                    }
-                    PanelIndex::CSS => {
+
+                        ui.add_space(10.0);
+                        ui.separator();
+                        ui.add_space(8.0);
                         ui.horizontal(|ui| {
                             ui.label(tr(Key::Template));
                             egui::ComboBox::from_id_salt("css_template")
-                                .selected_text(app.text_style.css_template.to_string())
+                                .selected_text(app.text_style.css_template.label(locale))
                                 .show_ui(ui, |ui| {
                                     for template in CssTemplate::ALL {
                                         ui.selectable_value(
                                             &mut app.text_style.css_template,
                                             template,
-                                            template.to_string(),
+                                            template.label(locale),
                                         );
                                     }
                                 });
                         });
-
+                        ui.add_space(4.0);
+                        ui.label(
+                            egui::RichText::new(app.text_style.css_template.description(locale))
+                                .small(),
+                        );
+                    }
+                    PanelIndex::CSS => {
                         ui.add_space(8.0);
                         ui.label(tr(Key::CustomCss));
                         ui.add_space(4.0);
@@ -427,45 +435,6 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                                 }
                             }
                         });
-
-                        ui.add_space(12.0);
-                        ui.separator();
-                        ui.add_space(8.0);
-                        ui.label(tr(Key::ChapterHeaderImage));
-                        ui.horizontal(|ui| {
-                            if ui.button(tr(Key::ChooseChapterHeader)).clicked() {
-                                if let Some(path) =
-                                    pick_image_file(tr(Key::PanelImages), &["jpeg", "png", "webp", "jpg"])
-                                {
-                                    app.runtime_notice = None;
-                                    app.chapter_header_image = image_reader_from_path(locale, &path);
-                                    app.chapter_header_image_path = path.to_string_lossy().to_string();
-                                } else if cfg!(target_arch = "wasm32") {
-                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
-                                }
-                            }
-                            if ui.button(tr(Key::ClearChapterHeader)).clicked() {
-                                app.chapter_header_image = ImageFileReader::default();
-                                app.chapter_header_image_path.clear();
-                            }
-
-                            if app.chapter_header_image.error.is_none() {
-                                if app.chapter_header_image.path.is_some()
-                                    && !app.chapter_header_image_path.is_empty()
-                                {
-                                    ui.label(&app.chapter_header_image_path);
-                                } else {
-                                    ui.label(tr(Key::ChapterHeaderPlaceholder));
-                                }
-                            }
-                            if let Some(err) = &app.chapter_header_image.error {
-                                ui.label(egui::RichText::new(err).color(egui::Color32::RED));
-                            }
-                        });
-                        ui.checkbox(
-                            &mut app.chapter_header_fullbleed,
-                            tr(Key::ChapterHeaderFullBleed),
-                        );
 
                         ui.add_space(12.0);
                         ui.separator();
@@ -539,6 +508,45 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                             }
                             ui.label(t1(locale, Key::TotalImages, app.images.len()));
                         });
+
+                        ui.add_space(8.0);
+                        ui.separator();
+                        ui.add_space(8.0);
+                        ui.label(tr(Key::ChapterHeaderImage));
+                        ui.horizontal(|ui| {
+                            if ui.button(tr(Key::ChooseChapterHeader)).clicked() {
+                                if let Some(path) =
+                                    pick_image_file(tr(Key::PanelImages), &["jpeg", "png", "webp", "jpg"])
+                                {
+                                    app.runtime_notice = None;
+                                    app.chapter_header_image = image_reader_from_path(locale, &path);
+                                    app.chapter_header_image_path = path.to_string_lossy().to_string();
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
+                                }
+                            }
+                            if ui.button(tr(Key::ClearChapterHeader)).clicked() {
+                                app.chapter_header_image = ImageFileReader::default();
+                                app.chapter_header_image_path.clear();
+                            }
+
+                            if app.chapter_header_image.error.is_none() {
+                                if app.chapter_header_image.path.is_some()
+                                    && !app.chapter_header_image_path.is_empty()
+                                {
+                                    ui.label(&app.chapter_header_image_path);
+                                } else {
+                                    ui.label(tr(Key::ChapterHeaderPlaceholder));
+                                }
+                            }
+                            if let Some(err) = &app.chapter_header_image.error {
+                                ui.label(egui::RichText::new(err).color(egui::Color32::RED));
+                            }
+                        });
+                        ui.checkbox(
+                            &mut app.chapter_header_fullbleed,
+                            tr(Key::ChapterHeaderFullBleed),
+                        );
 
                         ui.add_space(8.0);
                         egui::ScrollArea::vertical()
@@ -651,6 +659,19 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                             ui.text_edit_singleline(&mut app.filename_template);
                             ui.label(tr(Key::VarsHint));
                         });
+
+                        ui.add_space(12.0);
+                        ui.separator();
+                        ui.add_space(8.0);
+                        ui.label(tr(Key::TocSettings));
+                        ui.checkbox(&mut app.toc_options.insert_toc_page, tr(Key::InsertToc));
+                        ui.label(tr(Key::TocTitle));
+                        ui.text_edit_singleline(&mut app.toc_options.toc_title_override);
+                        ui.label(tr(Key::TocTitleHint));
+                        ui.checkbox(
+                            &mut app.toc_options.include_gallery_in_toc,
+                            tr(Key::IncludeGalleryInToc),
+                        );
 
                         ui.add_space(8.0);
                         ui.label(tr(Key::Current));

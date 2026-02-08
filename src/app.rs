@@ -2,7 +2,7 @@ use crate::components::chapter_editor::ChapterEditorState;
 use crate::conversion::{ConversionFacade, ConversionRequest};
 use crate::{
     BookInfo, ConversionMethod, FontAsset, ImageFileReader, Key, Locale, PanelIndex,
-    TextFileReader, TextStyle, t, t1,
+    TextFileReader, TextStyle, TocOptions, t, t1,
 };
 use regex::Regex;
 use std::path::{Path, PathBuf};
@@ -51,8 +51,7 @@ pub struct MainApp {
     images: Vec<ImageFileReader>, // 插图列表
     #[serde(skip)]
     include_images_section: bool, // 是否生成插图章节
-    #[serde(skip)]
-    inline_toc: bool, // 是否插入目录页
+    toc_options: TocOptions,
     // 其他输出相关配置
     output_path: String,       // 输出路径
     filename_template: String, // 文件命名模板
@@ -121,22 +120,22 @@ impl Default for MainApp {
             ],
             selected_method: ConversionMethod::Regex, // 默认使用正则表达式方法
             available_panels: vec![
-                PanelIndex::Chapter,     // 章节面板
                 PanelIndex::Format,      // 版式面板
+                PanelIndex::Chapter,     // 章节面板
                 PanelIndex::Font,        // 字体面板
                 PanelIndex::PublishInfo, // 出版信息面板
                 PanelIndex::CSS,         // CSS 面板
                 PanelIndex::Images,      // 插图面板
                 PanelIndex::Misc,        // 杂项面板
             ],
-            panel_index: PanelIndex::Chapter, // 默认显示章节面板
+            panel_index: PanelIndex::Format, // 默认显示排版面板
             book_info: BookInfo::default(),
             text_style: TextStyle::default(),
             theme_mode: ThemeMode::Light,
             locale: Locale::Zh,
             images: Vec::new(),
             include_images_section: true,
-            inline_toc: true,
+            toc_options: TocOptions::default(),
             output_path: ".".to_owned(),
             filename_template: "{书名}_{作者}.epub".to_owned(),
             show_editor: false,
@@ -260,7 +259,7 @@ impl MainApp {
             chapter_header_fullbleed: self.chapter_header_fullbleed,
             chapters_override,
             include_images_section: self.include_images_section,
-            inline_toc: self.inline_toc,
+            toc_options: self.toc_options.clone(),
         };
 
         match ConversionFacade::convert(request) {

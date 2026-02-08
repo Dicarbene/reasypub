@@ -5,7 +5,7 @@ use regex::Regex;
 use crate::epubworker::{BuildError, EpubBuildOptions, build_epub};
 use crate::{
     BookInfo, ChapterDraft, ConversionMethod, FontAsset, ImageAsset, Pattern, TextProcessor,
-    TextStyle,
+    TextStyle, TocOptions,
 };
 
 pub struct ConversionRequest {
@@ -24,7 +24,7 @@ pub struct ConversionRequest {
     pub chapter_header_fullbleed: bool,
     pub chapters_override: Option<Vec<ChapterDraft>>,
     pub include_images_section: bool,
-    pub inline_toc: bool,
+    pub toc_options: TocOptions,
 }
 
 pub struct ConversionResult {
@@ -42,7 +42,7 @@ pub struct EpubPlanBuilder {
     chapter_header_image: Option<ImageAsset>,
     chapter_header_fullbleed: bool,
     include_images_section: bool,
-    inline_toc: bool,
+    toc_options: TocOptions,
 }
 
 impl EpubPlanBuilder {
@@ -58,7 +58,7 @@ impl EpubPlanBuilder {
             chapter_header_image: None,
             chapter_header_fullbleed: false,
             include_images_section: true,
-            inline_toc: true,
+            toc_options: TocOptions::default(),
         }
     }
 
@@ -107,8 +107,8 @@ impl EpubPlanBuilder {
         self
     }
 
-    pub fn inline_toc(mut self, inline: bool) -> Self {
-        self.inline_toc = inline;
+    pub fn toc_options(mut self, toc_options: TocOptions) -> Self {
+        self.toc_options = toc_options;
         self
     }
 
@@ -124,7 +124,7 @@ impl EpubPlanBuilder {
             chapter_header_image: self.chapter_header_image,
             chapter_header_fullbleed: self.chapter_header_fullbleed,
             include_images_section: self.include_images_section,
-            inline_toc: self.inline_toc,
+            toc_options: self.toc_options,
         };
         Ok(build_epub(chapters, &options)?)
     }
@@ -268,7 +268,7 @@ impl ConversionFacade {
             .chapter_header_image(req.chapter_header_image)
             .chapter_header_fullbleed(req.chapter_header_fullbleed)
             .include_images_section(req.include_images_section)
-            .inline_toc(req.inline_toc)
+            .toc_options(req.toc_options)
             .build(&chapters)?;
 
         Ok(ConversionResult { output_path })
@@ -351,7 +351,10 @@ mod tests {
             chapter_header_fullbleed: false,
             chapters_override: None,
             include_images_section: false,
-            inline_toc: false,
+            toc_options: TocOptions {
+                insert_toc_page: false,
+                ..Default::default()
+            },
         };
         let err = ConversionFacade::convert(req).err().expect("error");
         match err {
@@ -378,7 +381,10 @@ mod tests {
             chapter_header_fullbleed: false,
             chapters_override: Some(Vec::new()),
             include_images_section: false,
-            inline_toc: false,
+            toc_options: TocOptions {
+                insert_toc_page: false,
+                ..Default::default()
+            },
         };
         let err = ConversionFacade::convert(req).err().expect("error");
         match err {
@@ -414,7 +420,10 @@ mod tests {
             chapter_header_fullbleed: false,
             chapters_override: Some(vec![chapter]),
             include_images_section: false,
-            inline_toc: false,
+            toc_options: TocOptions {
+                insert_toc_page: false,
+                ..Default::default()
+            },
         };
         let result = ConversionFacade::convert(req).expect("convert");
         assert!(!result.output_path.is_empty());
@@ -494,7 +503,10 @@ mod tests {
                 content: "Hello".to_string(),
             }]),
             include_images_section: false,
-            inline_toc: false,
+            toc_options: TocOptions {
+                insert_toc_page: false,
+                ..Default::default()
+            },
         };
         let err = ConversionFacade::convert(req).err().expect("error");
         match err {

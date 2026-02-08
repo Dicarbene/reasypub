@@ -34,6 +34,6 @@ pub(super) fn side_nav(app: &mut MainApp, ctx: &egui::Context) {
             );
             ui.add_space(6.0);
             ui.checkbox(&mut app.include_images_section, tr(Key::IncludeGallery));
-            ui.checkbox(&mut app.inline_toc, tr(Key::InsertToc));
+            ui.checkbox(&mut app.toc_options.insert_toc_page, tr(Key::InsertToc));
         });
 }

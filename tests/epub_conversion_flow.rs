@@ -1,5 +1,7 @@
 use reasypub::conversion::{ConversionFacade, ConversionRequest, StrategyFactory};
-use reasypub::{BookInfo, ChapterDraft, ConversionMethod, FontAsset, ImageAsset, TextStyle};
+use reasypub::{
+    BookInfo, ChapterDraft, ConversionMethod, FontAsset, ImageAsset, TextStyle, TocOptions,
+};
 use regex::Regex;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -307,7 +309,7 @@ fn export_epubs_for_manual_check() {
             chapter_header_fullbleed: false,
             chapters_override: None,
             include_images_section: false,
-            inline_toc: true,
+            toc_options: TocOptions::default(),
         };
 
         let result = ConversionFacade::convert(request).expect("convert");
@@ -465,7 +467,7 @@ fn chinese_novel_txt_conversion_flow() {
         chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: false,
-        inline_toc: true,
+        toc_options: TocOptions::default(),
     };
 
     let result = ConversionFacade::convert(request).expect("convert");
@@ -557,7 +559,7 @@ fn chinese_novel_full_pipeline_with_assets() {
         chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: true,
-        inline_toc: true,
+        toc_options: TocOptions::default(),
     };
 
     let result = ConversionFacade::convert(request).expect("convert");
@@ -681,7 +683,7 @@ fn fixtures_txt_conversion_flow() {
             chapter_header_fullbleed: false,
             chapters_override: None,
             include_images_section: false,
-            inline_toc: true,
+            toc_options: TocOptions::default(),
         };
 
         let result = ConversionFacade::convert(request).expect("convert");
@@ -733,7 +735,7 @@ fn hongloumeng_custom_case() {
         chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: false,
-        inline_toc: true,
+        toc_options: TocOptions::default(),
     };
 
     let result = ConversionFacade::convert(request).expect("convert");
@@ -789,7 +791,7 @@ fn chulong_custom_case() {
         chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: false,
-        inline_toc: true,
+        toc_options: TocOptions::default(),
     };
 
     let result = ConversionFacade::convert(request).expect("convert");
@@ -855,7 +857,7 @@ fn shubuqing_custom_case() {
         chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: false,
-        inline_toc: true,
+        toc_options: TocOptions::default(),
     };
 
     let result = ConversionFacade::convert(request).expect("convert");
@@ -869,6 +871,61 @@ fn shubuqing_custom_case() {
     let last_idx = find_chapter_index(&chapters, "数不清的井");
     assert_chapter_contains(output, first_idx, "序幕");
     assert_chapter_contains(output, last_idx, "数不清的井");
+
+    let _ = std::fs::remove_file(output);
+    let _ = std::fs::remove_dir_all(&out_dir);
+}
+
+#[test]
+fn toc_title_override_and_gallery_visibility_flow() {
+    let text = "Chapter 1\nHello\n\nChapter 2\nWorld";
+    let out_dir = temp_output_dir("reasypub-toc-flow");
+    let request = ConversionRequest {
+        text: text.to_string(),
+        method: ConversionMethod::Regex,
+        custom_regex: r"(?m)^Chapter\s+\d+".to_string(),
+        custom_config_path: None,
+        book_info: BookInfo {
+            title: "TOC Test".to_string(),
+            author: "Tester".to_string(),
+            language: "en".to_string(),
+            ..Default::default()
+        },
+        output_dir: out_dir.clone(),
+        filename_template: "toc_flow".to_string(),
+        style: TextStyle::default(),
+        cover: None,
+        images: vec![ImageAsset {
+            name: "gallery.png".to_string(),
+            bytes: bytes::Bytes::from_static(b"img"),
+            mime: "image/png".to_string(),
+            caption: Some("Gallery".to_string()),
+        }],
+        font: None,
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
+        chapters_override: None,
+        include_images_section: true,
+        toc_options: TocOptions {
+            insert_toc_page: true,
+            toc_title_override: "Contents (Flow)".to_string(),
+            include_gallery_in_toc: false,
+        },
+    };
+
+    let result = ConversionFacade::convert(request).expect("convert");
+    let output = Path::new(&result.output_path);
+    assert!(output.exists());
+
+    let nav = zip_read_to_string(output, "nav.xhtml");
+    assert!(nav.contains("Contents (Flow)"));
+    assert!(!nav.contains("images.xhtml"));
+
+    let entries = zip_entries(output);
+    assert!(entries.iter().any(|name| name.ends_with("images.xhtml")));
+
+    let opf = zip_read_to_string(output, ".opf");
+    assert!(opf.contains("Contents (Flow)"));
 
     let _ = std::fs::remove_file(output);
     let _ = std::fs::remove_dir_all(&out_dir);

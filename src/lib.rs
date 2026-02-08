@@ -182,6 +182,17 @@ mod tests {
         assert_eq!(draft.title, "Title line");
         assert_eq!(draft.content, "Second line\nThird line");
     }
+
+    #[test]
+    fn css_templates_have_i18n_labels_and_descriptions() {
+        assert_eq!(CssTemplate::ALL.len(), 7);
+        for template in CssTemplate::ALL {
+            assert!(!template.label(Locale::Zh).trim().is_empty());
+            assert!(!template.label(Locale::En).trim().is_empty());
+            assert!(!template.description(Locale::Zh).trim().is_empty());
+            assert!(!template.description(Locale::En).trim().is_empty());
+        }
+    }
 }
 
 #[derive(Default)]
@@ -279,6 +290,24 @@ pub struct BookInfo {
     pub description: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
+#[serde(default)]
+pub struct TocOptions {
+    pub insert_toc_page: bool,
+    pub toc_title_override: String,
+    pub include_gallery_in_toc: bool,
+}
+
+impl Default for TocOptions {
+    fn default() -> Self {
+        Self {
+            insert_toc_page: true,
+            toc_title_override: String::new(),
+            include_gallery_in_toc: true,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone, Copy)]
 pub enum CssTemplate {
     Classic,
@@ -306,19 +335,19 @@ impl CssTemplate {
             CssTemplate::Classic => {
                 r#"
 body {
-  font-family: "Latin Modern Roman", "CMU Serif", "STIX Two Text", "Source Serif 4", "Garamond",
-    "Georgia", "Times New Roman", serif;
+  font-family: "Latin Modern Roman", "CMU Serif", "STIX Two Text", "Source Serif 4", "Noto Serif SC",
+    "Songti SC", "Source Han Serif SC", "Garamond", "Georgia", "Times New Roman", serif;
   font-kerning: normal;
   font-variant-ligatures: common-ligatures;
   font-variant-numeric: oldstyle-nums;
   text-rendering: optimizeLegibility;
 }
 h1, h2, h3, h4 {
-  font-family: "Latin Modern Roman", "CMU Serif", "STIX Two Text", "Source Serif 4", "Garamond",
-    "Georgia", serif;
-  letter-spacing: 0.08em;
+  font-family: "Latin Modern Roman", "CMU Serif", "STIX Two Text", "Source Serif 4", "Noto Serif SC",
+    "Songti SC", "Garamond", "Georgia", serif;
+  letter-spacing: 0.07em;
 }
-h2 { font-weight: 600; text-align: center; margin-top: 2em; margin-bottom: 1.2em; }
+h2 { font-weight: 600; text-align: center; margin-top: 1.9em; margin-bottom: 1.1em; }
 p {
   text-align: justify;
   text-justify: inter-ideograph;
@@ -327,17 +356,17 @@ p {
   hyphens: auto;
   -webkit-hyphens: auto;
   -moz-hyphens: auto;
-  letter-spacing: 0.01em;
-  word-spacing: 0.02em;
+  letter-spacing: 0.012em;
+  word-spacing: 0.018em;
 }
 .chapter-label {
   font-size: 0.75em;
   font-variant: small-caps;
   text-transform: none;
-  letter-spacing: 0.4em;
+  letter-spacing: 0.36em;
   text-align: center;
   color: #444444;
-  margin-top: 0.9em;
+  margin-top: 0.85em;
   margin-bottom: 0.3em;
 }
 "#
@@ -345,14 +374,14 @@ p {
             CssTemplate::Modern => {
                 r#"
 body {
-  font-family: "Source Serif 4", "Noto Serif", "Georgia", "Times New Roman", serif;
+  font-family: "Source Serif 4", "Noto Serif", "Noto Serif SC", "Georgia", "Times New Roman", serif;
   font-kerning: normal;
 }
 h1, h2, h3, h4 {
-  font-family: "Source Sans 3", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-  letter-spacing: 0.08em;
+  font-family: "Source Sans 3", "Noto Sans SC", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  letter-spacing: 0.075em;
 }
-h2 { font-weight: 500; text-align: center; margin-top: 1.5em; margin-bottom: 0.95em; }
+h2 { font-weight: 550; text-align: center; margin-top: 1.45em; margin-bottom: 0.9em; }
 p {
   text-align: justify;
   text-justify: inter-ideograph;
@@ -363,19 +392,19 @@ p {
   -moz-hyphens: auto;
 }
 .chapter-label {
-  font-size: 0.78em;
+  font-size: 0.76em;
   color: #2f5d50;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.22em;
   text-align: center;
-  margin-top: 0.6em;
+  margin-top: 0.55em;
   margin-bottom: 0.2em;
 }
 "#
             }
             CssTemplate::Clean => {
                 r#"
-body { font-family: "Georgia", "Times New Roman", serif; }
-h2 { letter-spacing: 0.04em; font-weight: 600; text-align: center; margin-top: 1.6em; margin-bottom: 1em; }
+body { font-family: "Georgia", "Noto Serif SC", "Times New Roman", serif; }
+h2 { letter-spacing: 0.035em; font-weight: 600; text-align: center; margin-top: 1.55em; margin-bottom: 0.95em; }
 p {
   text-align: justify;
   text-justify: inter-ideograph;
@@ -385,22 +414,22 @@ p {
   -webkit-hyphens: auto;
   -moz-hyphens: auto;
 }
-.chapter-label { font-size: 0.8em; color: #3b3b3b; letter-spacing: 0.2em; text-align: center; }
+.chapter-label { font-size: 0.78em; color: #3b3b3b; letter-spacing: 0.16em; text-align: center; }
 "#
             }
             CssTemplate::Elegant => {
                 r#"
 body {
-  font-family: "Garamond", "Palatino", "Times New Roman", serif;
+  font-family: "Garamond", "Palatino", "Noto Serif SC", "Times New Roman", serif;
   font-variant-ligatures: common-ligatures;
   font-variant-numeric: oldstyle-nums;
   text-rendering: optimizeLegibility;
 }
 h1, h2, h3, h4 {
-  font-family: "Garamond", "Palatino", "Times New Roman", serif;
-  letter-spacing: 0.06em;
+  font-family: "Garamond", "Palatino", "Noto Serif SC", "Times New Roman", serif;
+  letter-spacing: 0.055em;
 }
-h2 { font-weight: 600; text-align: center; margin-top: 2.2em; margin-bottom: 1.2em; }
+h2 { font-weight: 600; text-align: center; margin-top: 2.1em; margin-bottom: 1.15em; }
 p {
   text-align: justify;
   text-justify: inter-ideograph;
@@ -409,17 +438,17 @@ p {
   hyphens: auto;
   -webkit-hyphens: auto;
   -moz-hyphens: auto;
-  letter-spacing: 0.02em;
-  word-spacing: 0.03em;
+  letter-spacing: 0.018em;
+  word-spacing: 0.028em;
 }
 .chapter-label {
   font-size: 0.75em;
   color: #5a4a3b;
   font-variant: small-caps;
   text-transform: none;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.28em;
   text-align: center;
-  margin-top: 1em;
+  margin-top: 0.9em;
   margin-bottom: 0.35em;
 }
 "#
@@ -427,16 +456,16 @@ p {
             CssTemplate::Folio => {
                 r#"
 body {
-  font-family: "Baskerville", "Garamond", "Palatino", "Times New Roman", serif;
+  font-family: "Baskerville", "Garamond", "Palatino", "Noto Serif SC", "Times New Roman", serif;
   font-variant-ligatures: common-ligatures;
   font-variant-numeric: oldstyle-nums;
   text-rendering: optimizeLegibility;
 }
 h1, h2, h3, h4 {
-  font-family: "Baskerville", "Garamond", "Palatino", "Times New Roman", serif;
-  letter-spacing: 0.1em;
+  font-family: "Baskerville", "Garamond", "Palatino", "Noto Serif SC", "Times New Roman", serif;
+  letter-spacing: 0.09em;
 }
-h2 { font-weight: 600; text-align: center; margin-top: 2.2em; margin-bottom: 1.2em; }
+h2 { font-weight: 600; text-align: center; margin-top: 2.05em; margin-bottom: 1.1em; }
 p {
   text-align: justify;
   text-justify: inter-ideograph;
@@ -445,16 +474,16 @@ p {
   hyphens: auto;
   -webkit-hyphens: auto;
   -moz-hyphens: auto;
-  letter-spacing: 0.015em;
-  word-spacing: 0.04em;
+  letter-spacing: 0.014em;
+  word-spacing: 0.03em;
 }
 .chapter-label {
   font-size: 0.76em;
   color: #5a4a3b;
   font-variant: small-caps;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.3em;
   text-align: center;
-  margin-top: 0.8em;
+  margin-top: 0.75em;
   margin-bottom: 0.3em;
 }
 "#
@@ -462,17 +491,17 @@ p {
             CssTemplate::Fantasy => {
                 r#"
 body {
-  font-family: "kt", "KaiTi", "STKaiti", "Kaiti SC", "Baskerville", "Garamond", serif;
+  font-family: "kt", "KaiTi", "STKaiti", "Kaiti SC", "Noto Serif SC", "Baskerville", "Garamond", serif;
   font-variant-ligatures: common-ligatures;
   text-rendering: optimizeLegibility;
-  color: #2a1e14;
-  letter-spacing: 0.02em;
+  color: #2f2318;
+  letter-spacing: 0.018em;
 }
 h1, h2, h3, h4 {
-  font-family: "rbs", "dbs", "KaiTi", "STKaiti", "Kaiti SC", "Garamond", serif;
-  letter-spacing: 0.16em;
+  font-family: "rbs", "dbs", "KaiTi", "STKaiti", "Kaiti SC", "Noto Serif SC", "Garamond", serif;
+  letter-spacing: 0.15em;
 }
-h2 { font-weight: 600; text-align: center; margin-top: 2.4em; margin-bottom: 1.4em; }
+h2 { font-weight: 600; text-align: center; margin-top: 2.2em; margin-bottom: 1.25em; }
 p {
   text-align: justify;
   text-justify: inter-ideograph;
@@ -481,25 +510,25 @@ p {
   hyphens: auto;
   -webkit-hyphens: auto;
   -moz-hyphens: auto;
-  letter-spacing: 0.02em;
-  word-spacing: 0.04em;
+  letter-spacing: 0.018em;
+  word-spacing: 0.03em;
 }
 .chapter-label {
   font-size: 0.78em;
   color: #a66c44;
   font-variant: small-caps;
-  letter-spacing: 0.42em;
+  letter-spacing: 0.36em;
   text-align: center;
-  margin-top: 0.9em;
+  margin-top: 0.82em;
   margin-bottom: 0.35em;
 }
 "#
             }
             CssTemplate::Minimal => {
                 r#"
-body { font-family: "Times New Roman", "Georgia", serif; }
-h1, h2, h3, h4 { font-family: "Times New Roman", "Georgia", serif; letter-spacing: 0.04em; }
-h2 { font-weight: normal; text-align: center; margin-top: 1.4em; margin-bottom: 0.9em; }
+body { font-family: "Times New Roman", "Noto Serif SC", "Georgia", serif; }
+h1, h2, h3, h4 { font-family: "Times New Roman", "Noto Serif SC", "Georgia", serif; letter-spacing: 0.035em; }
+h2 { font-weight: normal; text-align: center; margin-top: 1.35em; margin-bottom: 0.85em; }
 p {
   text-align: justify;
   text-justify: inter-ideograph;
@@ -509,10 +538,42 @@ p {
   -webkit-hyphens: auto;
   -moz-hyphens: auto;
 }
-.chapter-label { font-size: 0.76em; color: #2f2f2f; letter-spacing: 0.22em; text-align: center; }
+.chapter-label { font-size: 0.75em; color: #2f2f2f; letter-spacing: 0.18em; text-align: center; }
 "#
             }
         }
+    }
+
+    pub fn name_key(self) -> Key {
+        match self {
+            CssTemplate::Classic => Key::StyleClassicName,
+            CssTemplate::Modern => Key::StyleModernName,
+            CssTemplate::Clean => Key::StyleCleanName,
+            CssTemplate::Elegant => Key::StyleElegantName,
+            CssTemplate::Folio => Key::StyleFolioName,
+            CssTemplate::Fantasy => Key::StyleFantasyName,
+            CssTemplate::Minimal => Key::StyleMinimalName,
+        }
+    }
+
+    pub fn desc_key(self) -> Key {
+        match self {
+            CssTemplate::Classic => Key::StyleClassicDesc,
+            CssTemplate::Modern => Key::StyleModernDesc,
+            CssTemplate::Clean => Key::StyleCleanDesc,
+            CssTemplate::Elegant => Key::StyleElegantDesc,
+            CssTemplate::Folio => Key::StyleFolioDesc,
+            CssTemplate::Fantasy => Key::StyleFantasyDesc,
+            CssTemplate::Minimal => Key::StyleMinimalDesc,
+        }
+    }
+
+    pub fn label(self, locale: Locale) -> &'static str {
+        t(locale, self.name_key())
+    }
+
+    pub fn description(self, locale: Locale) -> &'static str {
+        t(locale, self.desc_key())
     }
 }
 
