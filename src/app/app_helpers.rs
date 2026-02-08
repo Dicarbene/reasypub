@@ -253,7 +253,7 @@ fn font_mime_from_extension(ext: &str) -> &'static str {
     }
 }
 
-/// 显示 egui 和 eframe 的版权信息
+/// 显示 `egui` 与 `eframe` 的版权信息。
 pub(super) fn powered_by_egui_and_eframe(ui: &mut egui::Ui, locale: Locale) {
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 0.0;
@@ -268,7 +268,7 @@ pub(super) fn powered_by_egui_and_eframe(ui: &mut egui::Ui, locale: Locale) {
     });
 }
 
-/// 从文件名中提取书名和作者
+/// 从文件名中提取书名与作者。
 fn parse_filename_to_book_info(filename: &str) -> (String, String) {
     let stem = std::path::Path::new(filename)
         .file_stem()
@@ -278,7 +278,7 @@ fn parse_filename_to_book_info(filename: &str) -> (String, String) {
     let mut title = String::new();
     let mut author = String::new();
 
-    // 尝试不同的分隔符
+    // 尝试不同分隔符。
     let separators = ['_', '-', ' ', '—', '–', '·'];
 
     for sep in separators {
@@ -289,7 +289,7 @@ fn parse_filename_to_book_info(filename: &str) -> (String, String) {
         }
     }
 
-    // 如果没有找到分隔符，整个文件名作为书名
+    // 若未命中分隔符，则将整个文件名作为书名。
     if title.is_empty() {
         title = stem.to_string();
     }
@@ -297,7 +297,7 @@ fn parse_filename_to_book_info(filename: &str) -> (String, String) {
     (title, author)
 }
 
-/// 读取文本文件
+/// 读取文本文件。
 pub(super) fn readtxt(
     ui: &mut egui::Ui,
     locale: Locale,
@@ -336,7 +336,7 @@ pub(super) fn readtxt(
             }
         }
 
-        // 显示错误信息
+        // 显示错误信息。
         if let Some(err) = &input_txt.error {
             ui.label(egui::RichText::new(err).color(egui::Color32::RED));
         } else if input_txt.path.is_some() && !input_txt_path.is_empty() {
@@ -347,7 +347,7 @@ pub(super) fn readtxt(
     });
 }
 
-/// 从图片路径构建读取器
+/// 根据图片路径构建读取器。
 pub(super) fn image_reader_from_path(locale: Locale, path: &Path) -> ImageFileReader {
     let caption = path
         .file_stem()
@@ -371,26 +371,26 @@ pub(super) fn image_reader_from_path(locale: Locale, path: &Path) -> ImageFileRe
     }
 }
 
-/// 显示图片 UI
+/// 渲染图片预览区域。
 pub(super) fn show_image_ui(ui: &mut egui::Ui, locale: Locale, reader: &mut ImageFileReader) {
-    // 带边框的容器
+    // 带边框的容器。
     let frame = egui::Frame::new().inner_margin(4.0).corner_radius(4.0);
     frame.show(ui, |ui| {
-        // 更新纹理
+        // 更新纹理。
         reader.update_texture(ui.ctx());
 
         if let Some(texture) = &reader.texture {
-            // 显示图片（自动缩放填充容器）
+            // 显示图片（自动缩放至容器宽度）。
             ui.add(
                 egui::Image::new(texture)
                     .max_width(200.0)
                     .corner_radius(10.0),
             );
         } else if let Some(err) = &reader.error {
-            // 显示错误信息
+            // 显示错误信息。
             ui.colored_label(egui::Color32::RED, err);
         } else {
-            // 显示占位符
+            // 显示占位提示。
             ui.label(t(locale, Key::CoverEmpty));
         }
     });

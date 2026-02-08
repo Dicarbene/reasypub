@@ -14,11 +14,17 @@ use app_helpers::{
     load_font_asset,
 };
 
-/// 我们派生 Deserialize/Serialize 以便在关闭时持久化应用状态
+/// 派生 `Deserialize/Serialize`，用于在关闭时持久化应用状态。
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // 如果添加新字段，在反序列化旧状态时给予默认值
+/// 应用主界面状态。
+///
+/// 设计说明：
+/// - 持久化字段用于跨重启保留用户输入和偏好设置。
+/// - `#[serde(skip)]` 字段是运行时缓存/瞬时 UI 状态，不会写入存档。
+/// - 转换流程读取此状态，并通过结果弹窗字段回传成功/失败信息。
 pub struct MainApp {
-    // 基础数据结构体
+    // 基础输入与配置状态
     input_txt_path: String,            // 输入文本文件路径
     input_image_path: String,          // 输入图片路径
     chapter_header_image_path: String, // 章头图路径
@@ -29,7 +35,7 @@ pub struct MainApp {
     custom_regex_file: Option<std::path::PathBuf>,
     #[serde(skip)]
     custom_regex_status: Option<(bool, String)>,
-    // 转换配置
+    // 转换策略配置
     available_methods: Vec<ConversionMethod>, // 可用的转换方法（使用枚举）
     selected_method: ConversionMethod,        // 当前选中的转换方法
     available_panels: Vec<PanelIndex>,        // 可用的面板索引
@@ -47,10 +53,10 @@ pub struct MainApp {
     include_images_section: bool, // 是否生成插图章节
     #[serde(skip)]
     inline_toc: bool, // 是否插入目录页
-    // 杂项配置
+    // 其他输出相关配置
     output_path: String,       // 输出路径
     filename_template: String, // 文件命名模板
-    // 编辑器状态
+    // 文本/章节编辑状态
     show_editor: bool, // 是否显示编辑器
     #[serde(skip)]
     chapter_editor: ChapterEditorState,
@@ -60,9 +66,9 @@ pub struct MainApp {
     chapter_preview_error: Option<String>,
     #[serde(skip)]
     chapter_preview_signature: Option<u64>,
-    // 转换状态
+    // 转换执行与结果状态
     #[serde(skip)]
-    show_conversion_modal: bool, // 是否显示转换完成modal
+    show_conversion_modal: bool, // 是否显示转换结果弹窗
     #[serde(skip)]
     conversion_result: Option<String>, // 转换结果（成功时的文件路径）
     #[serde(skip)]
@@ -98,7 +104,7 @@ impl ThemeMode {
 }
 
 impl Default for MainApp {
-    // 基础数据初始化
+    // 初始化默认状态
     fn default() -> Self {
         Self {
             input_txt_path: String::new(),
@@ -153,15 +159,15 @@ impl Default for MainApp {
 }
 
 impl MainApp {
-    /// 在第一帧被调用一次
+    /// 在应用启动后的第一帧调用一次。
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // 这里也可以自定义 egui 的外观
-        // 使用 `cc.egui_ctx.set_visuals` 和 `cc.egui_ctx.set_fonts`
-        // 创建字体配置
+        // 可在这里自定义 egui 外观：
+        // 使用 `cc.egui_ctx.set_visuals` / `cc.egui_ctx.set_fonts`。
+        // 创建字体配置。
         use std::sync::Arc;
         let mut fonts = egui::FontDefinitions::default();
 
-        // 插入自定义字体数据
+        // 注入自定义字体数据。
         fonts.font_data.insert(
             "stdg".to_owned(),
             Arc::new(egui::FontData::from_static(include_bytes!(
@@ -169,14 +175,14 @@ impl MainApp {
             ))), // 注意这里补全了括号
         );
 
-        // 设置字体
+        // 应用字体设置。
         fonts
             .families
             .entry(egui::FontFamily::Proportional)
             .or_default()
             .insert(0, "stdg".to_owned());
 
-        // 为等宽字体也设置中文字体支持
+        // 为等宽字体族补充中文字体支持。
         fonts
             .families
             .entry(egui::FontFamily::Monospace)
@@ -185,8 +191,8 @@ impl MainApp {
 
         cc.egui_ctx.set_fonts(fonts);
 
-        // 加载之前的应用状态（如果有）
-        // 注意：必须启用 `persistence` 功能才能使用
+        // 加载之前保存的应用状态（如果存在）。
+        // 注意：需要启用 `persistence` 功能。
         /*         if let Some(storage) = cc.storage {
                    return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
                }
@@ -196,6 +202,12 @@ impl MainApp {
         app
     }
 
+    /// 基于当前 UI 状态构建并执行一次转换请求。
+    ///
+    /// 流程：
+    /// 1）校验必要输入与章节编辑器状态；
+    /// 2）收集可选资源（封面/插图/字体/章头图）；
+    /// 3）调用 `ConversionFacade`，并将结果映射到弹窗状态字段。
     fn run_conversion(&mut self) {
         self.conversion_error = None;
         self.conversion_result = None;
@@ -265,6 +277,10 @@ impl MainApp {
         }
     }
 
+    /// 解析字体资源（优先使用缓存）。
+    ///
+    /// 若字体已在内存中加载则直接复用；否则按 `text_style.font_path`
+    /// 延迟加载，成功后写回缓存。
     fn resolve_font_asset(&mut self) -> Option<FontAsset> {
         if let Some(asset) = self.font_asset.clone() {
             return Some(asset);
@@ -286,6 +302,10 @@ impl MainApp {
         }
     }
 
+    /// 使用当前分章策略与源文本重建章节预览。
+    ///
+    /// 预览仅保存轻量信息（章节数 + 前几个标题），在保证可校验性的同时
+    /// 控制 UI 刷新成本。
     fn refresh_chapter_preview(&mut self) {
         if self.input_file.content.trim().is_empty() {
             self.chapter_preview_error = Some(t(self.locale, Key::PreviewTextEmpty).to_string());
@@ -325,6 +345,9 @@ impl MainApp {
         }
     }
 
+    /// 计算分章相关输入的确定性签名。
+    ///
+    /// 当文本或分章配置变化后，用于判断章节编辑结果是否“过期”。
     fn preview_signature(&self) -> u64 {
         crate::chapter_signature(
             &self.input_file.content,
@@ -352,12 +375,12 @@ struct ChapterPreview {
 }
 
 impl eframe::App for MainApp {
-    /// 由框架在关闭前调用以保存状态
+    /// 由框架在关闭前调用，用于保存状态。
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
-    /// 每帧更新都调用
+    /// 每一帧都会调用。
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         apply_theme(ctx, self.theme_mode);
         ui::top_panel(self, ctx);

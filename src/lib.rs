@@ -34,7 +34,7 @@ impl ConversionMethod {
     }
 }
 
-// 转化方式显示名称
+// 转换方式对应的显示名称。
 impl std::fmt::Display for ConversionMethod {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -69,7 +69,7 @@ impl PanelIndex {
     }
 }
 
-// 面板选择
+// 面板枚举对应的显示名称。
 impl std::fmt::Display for PanelIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -84,6 +84,10 @@ impl std::fmt::Display for PanelIndex {
     }
 }
 
+/// 将分章相关输入哈希为稳定签名。
+///
+/// 用于在文本、分章方法、正则或配置文件内容变化时，
+/// 判断章节预览/章节编辑内容是否已过期。
 pub fn chapter_signature(
     text: &str,
     method: ConversionMethod,
@@ -207,9 +211,9 @@ impl std::fmt::Debug for ImageFileReader {
     }
 }
 impl ImageFileReader {
-    /// 更新纹理（在 UI 线程调用）
+    /// 更新纹理（需在 UI 线程中调用）。
     fn update_texture(&mut self, ctx: &egui::Context) {
-        // 仅当内容变化时重新加载
+        // 仅在内容变化时重新加载。
         if !self.content.is_empty() && self.texture.is_none() {
             match self.load_texture(ctx) {
                 Ok(texture) => self.texture = Some(texture),
@@ -218,18 +222,18 @@ impl ImageFileReader {
         }
     }
 
-    /// 解码图片并生成纹理
+    /// 解码图片并生成纹理。
     fn load_texture(&self, ctx: &egui::Context) -> Result<TextureHandle, ImageError> {
-        // 解码图片
+        // 解码图片。
         let img = image::load_from_memory(&self.content)?;
         let rgba = img.to_rgba8();
 
-        // 转换为 egui 需要的格式
+        // 转换为 egui 需要的像素格式。
         let size = [rgba.width() as _, rgba.height() as _];
         let pixels = rgba.as_flat_samples();
         let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
 
-        // 上传纹理到 GPU
+        // 上传纹理到 GPU。
         Ok(ctx.load_texture(
             self.texture_key(),
             color_image,
@@ -607,7 +611,7 @@ impl Pattern {
                 &RE
             }
             Pattern::SimpleRules => {
-                // SimpleRules 不使用正则，返回一个匹配所有内容的正则作为后备
+                // SimpleRules 不直接依赖正则，这里返回“匹配全部”的后备正则。
                 static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r".*").unwrap());
                 &RE
             }
@@ -616,6 +620,10 @@ impl Pattern {
     }
 }
 
+/// 转换与章节预览共用的文本分章器。
+///
+/// `TextProcessor` 只负责文本切分，不掺杂 UI 或 EPUB 渲染逻辑，
+/// 这样可以保证行为稳定且更易测试。
 #[derive(Debug)]
 pub(crate) struct TextProcessor {
     pattern: Pattern,
@@ -641,6 +649,9 @@ impl TextProcessor {
         }
     }
 
+    /// 按正则章节边界进行分章。
+    ///
+    /// 若首章前存在前言文本会保留；末尾剩余的非空内容也会保留。
     fn split_by_regex(&self) -> Vec<String> {
         let re = self.pattern.to_regex();
         let clean = Regex::new(r"[\r\u{3000}]+").unwrap();
@@ -649,12 +660,12 @@ impl TextProcessor {
         let mut result = Vec::new();
         let mut last_end = 0;
 
-        // 遍历所有匹配的章节标题
+        // 遍历所有匹配到的章节标题。
         for mat in re.find_iter(&t) {
             let start = mat.start();
             let end = mat.end();
 
-            // 1. 如果是第一个章节，先检查前面是否有非章节内容（比如前言）
+            // 1）若为首个章节，先提取前置非章节内容（如前言）。
             if result.is_empty() && start > 0 {
                 let preface = t[..start].trim();
                 if !preface.is_empty() {
@@ -662,13 +673,13 @@ impl TextProcessor {
                 }
             }
 
-            // 2. 找到下一个章节标题的位置（或文本末尾）
+            // 2）找到下一个章节标题位置（或文本末尾）。
             let next_match = re
                 .find(&t[end..])
                 .map(|m| end + m.start())
                 .unwrap_or(t.len());
 
-            // 3. 提取当前章节（标题 + 内容）
+            // 3）提取当前章节（标题 + 内容）。
             let chapter = t[start..next_match].trim();
             if !chapter.is_empty() {
                 result.push(chapter.to_string());
@@ -677,7 +688,7 @@ impl TextProcessor {
             last_end = next_match;
         }
 
-        // 4. 如果最后还有剩余内容（比如没有章节的结尾部分）
+        // 4）若末尾仍有非空剩余内容，作为最后一段保留。
         if last_end < t.len() {
             let remaining = t[last_end..].trim();
             if !remaining.is_empty() {
@@ -688,6 +699,9 @@ impl TextProcessor {
         result
     }
 
+    /// 按启发式标题行规则进行分章。
+    ///
+    /// 适用于没有显式自定义正则配置的常见文本场景。
     fn split_by_simple_rules(&self) -> Vec<String> {
         let clean = Regex::new(r"[\r\u{3000}]+").unwrap();
         let t = clean.replace_all(&self.text, "").trim().to_string();
@@ -699,19 +713,19 @@ impl TextProcessor {
         for line in lines {
             let trimmed = line.trim();
             if Self::is_chapter_title_line(trimmed) {
-                // 如果当前章节不为空，先保存
+                // 当前章节非空时先落盘到结果集。
                 if !current_chapter.trim().is_empty() {
                     result.push(current_chapter.trim().to_string());
                 }
-                // 开始新章节
+                // 开始新章节。
                 current_chapter = format!("{}\n", trimmed);
             } else {
-                // 添加到当前章节
+                // 追加到当前章节。
                 current_chapter.push_str(&format!("{}\n", trimmed));
             }
         }
 
-        // 添加最后一个章节
+        // 收尾：追加最后一个章节。
         if !current_chapter.trim().is_empty() {
             result.push(current_chapter.trim().to_string());
         }

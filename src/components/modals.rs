@@ -96,8 +96,8 @@ impl crate::View for Modals {
                             *save_modal_open = true;
                         }
                         if ui.button("Cancel").clicked() {
-                            // You can call `ui.close()` to close the modal.
-                            // (This causes the current modals `should_close` to return true)
+                            // 可调用 `ui.close()` 关闭当前弹窗。
+                            // （这会使当前弹窗的 `should_close` 返回 `true`。）
                             ui.close();
                         }
                     },
@@ -185,7 +185,8 @@ mod tests {
 
         harness.get_by_role(Role::ComboBox).click();
 
-        // Harness::run would fail because we keep requesting repaints to simulate progress.
+        // 这里不能用 `Harness::run`：我们会持续请求重绘来模拟进度，
+        // 会导致 `run` 判定失败。
         harness.run_ok();
         assert!(harness.ctx.memory(|mem| mem.any_popup_open()));
         assert!(harness.state().user_modal_open);
@@ -249,7 +250,7 @@ mod tests {
         results.add(harness.try_snapshot("modals_3"));
     }
 
-    // This tests whether the backdrop actually prevents interaction with lower layers.
+    // 验证遮罩层是否真正阻止与下层 UI 的交互。
     #[test]
     fn backdrop_should_prevent_focusing_lower_area() {
         let initial_state = Modals {
@@ -271,7 +272,7 @@ mod tests {
 
         harness.run_ok();
 
-        // This snapshots should show the progress bar modal on top of the save modal.
+        // 此快照应展示：进度条弹窗位于保存弹窗之上。
         harness.snapshot("modals_backdrop_should_prevent_focusing_lower_area");
     }
 }
