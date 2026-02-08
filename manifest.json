@@ -1,0 +1,23 @@
+{
+  "name": "Reasypub",
+  "short_name": "Reasypub",
+  "icons": [
+    {
+      "src": "./assets/icon.png",
+      "sizes": "215x213",
+      "type": "image/png"
+    },
+    {
+      "src": "./assets/maskable_icon_x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "lang": "zh-CN",
+  "id": "/index.html",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#f8f9fa"
+}
