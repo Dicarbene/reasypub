@@ -16,5 +16,9 @@ target_wasm
 **/tests/snapshots/**/*.diff.png
 **/tests/snapshots/**/*.new.png
 
+# local generated outputs
+artifacts/
+*.epub
+
 
 .cargo-temp/*
