@@ -2,6 +2,9 @@ on: [push, pull_request, workflow_dispatch]
 
 name: CI
 
+permissions:
+  contents: write
+
 env:
   RUSTFLAGS: -D warnings
   RUSTDOCFLAGS: -D warnings
@@ -128,45 +131,44 @@ jobs:
     - name: Building ${{ matrix.TARGET }}
       run: echo "${{ matrix.TARGET }}"
 
-    - uses: actions/checkout@master
-    - name: Install build dependencies - Rustup
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile default --target ${{ matrix.TARGET }} -y
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.TARGET }}
 
-    # For linux, it's necessary to use cross from the git repository to avoid glibc problems
-    # Ref: https://github.com/cross-rs/cross/issues/1510
     - name: Install cross for linux
       if: contains(matrix.TARGET, 'linux')
       run: |
-        cargo install cross --git https://github.com/cross-rs/cross --rev 1b8cf50d20180c1a394099e608141480f934b7f7
+        cargo install cross --locked --version 0.2.5
 
-    - name: Install cross for mac and windows
-      if: ${{ !contains(matrix.TARGET, 'linux') }}
-      run: |
-        cargo install cross
-
-    - name: Build
+    - name: Build (cross, linux targets)
+      if: contains(matrix.TARGET, 'linux')
       run: |
         cross build --verbose --release --target=${{ matrix.TARGET }}
+
+    - name: Build (native, non-linux targets)
+      if: ${{ !contains(matrix.TARGET, 'linux') }}
+      run: |
+        cargo build --verbose --release --target=${{ matrix.TARGET }}
 
     - name: Rename
       run: cp target/${{ matrix.TARGET }}/release/reasypub${{ matrix.EXTENSION }} reasypub-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
 
-    - uses: actions/upload-artifact@master
+    - uses: actions/upload-artifact@v4
       with:
         name: reasypub-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
         path: reasypub-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
 
     - uses: svenstaro/upload-release-action@v2
       name: Upload binaries to release
-      if: ${{ github.event_name == 'push' }}
+      if: startsWith(github.ref, 'refs/tags/')
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: reasypub-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
         asset_name: reasypub-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
         tag: ${{ github.ref }}
-        prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        draft: ${{ contains(github.ref_name, '-rc') }}
+        prerelease: ${{ contains(github.ref_name, '-rc') }}
         overwrite: true
 
   checksums:
@@ -196,5 +198,6 @@ jobs:
           file: SHA256SUMS
           asset_name: SHA256SUMS
           tag: ${{ github.ref }}
-          prerelease: false
+          draft: ${{ contains(github.ref_name, '-rc') }}
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
           overwrite: true
