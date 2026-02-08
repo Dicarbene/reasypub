@@ -38,7 +38,9 @@ pub(super) fn build_stylesheet(
     css.push_str(".cover-frame { position: relative; margin: 2.8em 1.6em; padding: 2.4em 1.8em; border: 2px double #6b5b4b; background: #fbf8f2; }\n");
     css.push_str(".cover-title { font-size: 2.2em; letter-spacing: 0.12em; line-height: 1.2; margin: 0.6em 0 0.2em; }\n");
     css.push_str(".cover-subtitle { font-size: 1.05em; letter-spacing: 0.08em; color: #6b5b4b; margin: 0.2em 0 0.6em; }\n");
-    css.push_str(".cover-author { font-size: 1.1em; letter-spacing: 0.2em; margin: 1.2em 0 0.2em; }\n");
+    css.push_str(
+        ".cover-author { font-size: 1.1em; letter-spacing: 0.2em; margin: 1.2em 0 0.2em; }\n",
+    );
     css.push_str(".cover-meta { font-size: 0.85em; letter-spacing: 0.2em; color: #6b5b4b; margin-top: 1.4em; }\n");
     css.push_str(".cover-ornament { height: 1.8em; width: 70%; margin: 0.8em auto; border-top: 1px solid #6b5b4b; border-bottom: 1px solid #cbbda9; }\n");
 
@@ -46,7 +48,9 @@ pub(super) fn build_stylesheet(
     css.push_str(".chapter { page-break-before: always; break-before: page; }\n");
     css.push_str(".chapter-head-image { text-align: center; margin: 0 0 1.2em; }\n");
     css.push_str(".chapter-head-image img { width: 100%; max-width: 100%; border: none; box-shadow: none; background: none; }\n");
-    css.push_str(".chapter-head-image.fullbleed { duokan-bleed: lefttopright; margin: 0 0 -30% 0; }\n");
+    css.push_str(
+        ".chapter-head-image.fullbleed { duokan-bleed: lefttopright; margin: 0 0 -30% 0; }\n",
+    );
     css.push_str(
         ".chapter-header { text-align: center; margin: 2.4em 0 2.1em; position: relative; padding: 0.8em 0 1em; background: linear-gradient(#8a7a66, #8a7a66) left top/1.4em 1px no-repeat, linear-gradient(#8a7a66, #8a7a66) left top/1px 1.4em no-repeat, linear-gradient(#8a7a66, #8a7a66) right top/1.4em 1px no-repeat, linear-gradient(#8a7a66, #8a7a66) right top/1px 1.4em no-repeat, linear-gradient(#8a7a66, #8a7a66) left bottom/1.4em 1px no-repeat, linear-gradient(#8a7a66, #8a7a66) left bottom/1px 1.4em no-repeat, linear-gradient(#8a7a66, #8a7a66) right bottom/1.4em 1px no-repeat, linear-gradient(#8a7a66, #8a7a66) right bottom/1px 1.4em no-repeat; }\n",
     );
@@ -55,7 +59,9 @@ pub(super) fn build_stylesheet(
     );
     css.push_str(".chapter-header::before { left: 0.35em; }\n");
     css.push_str(".chapter-header::after { right: 0.35em; }\n");
-    css.push_str(".chapter-header h2 { display: inline-block; padding: 0 0.7em; position: relative; }\n");
+    css.push_str(
+        ".chapter-header h2 { display: inline-block; padding: 0 0.7em; position: relative; }\n",
+    );
     css.push_str(
         ".chapter-ornament { border-top: 1px solid #6b5b4b; border-bottom: 1px solid #c0b5a4; height: 0; margin: 0.9em auto; width: 54%; text-align: center; }\n",
     );

@@ -22,8 +22,8 @@ fn main() -> eframe::Result {
 
     // 运行原生应用
     eframe::run_native(
-        "Reasypub", // 应用窗口标题
-        native_options, // 窗口配置选项
+        "Reasypub",                                              // 应用窗口标题
+        native_options,                                          // 窗口配置选项
         Box::new(|cc| Ok(Box::new(reasypub::MainApp::new(cc)))), // 创建应用实例的闭包
     )
 }
@@ -57,8 +57,8 @@ fn main() {
         // 启动 Web 运行器
         let start_result = eframe::WebRunner::new()
             .start(
-                canvas, // Canvas 元素
-                web_options, // Web 配置选项
+                canvas,                                                  // Canvas 元素
+                web_options,                                             // Web 配置选项
                 Box::new(|cc| Ok(Box::new(reasypub::MainApp::new(cc)))), // 创建应用实例的闭包
             )
             .await;

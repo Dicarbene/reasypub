@@ -1,7 +1,7 @@
-use crate::{t, t1, Key};
+use crate::{Key, t, t1};
 
-use super::super::app_helpers::{card, display_or_placeholder, show_image_ui};
 use super::super::MainApp;
+use super::super::app_helpers::{card, display_or_placeholder, show_image_ui};
 
 pub(super) fn preview_panel(app: &mut MainApp, ctx: &egui::Context) {
     let locale = app.locale;

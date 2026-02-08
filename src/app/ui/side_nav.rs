@@ -1,4 +1,4 @@
-use crate::{t, Key};
+use crate::{Key, t};
 
 use super::super::MainApp;
 
@@ -28,7 +28,10 @@ pub(super) fn side_nav(app: &mut MainApp, ctx: &egui::Context) {
             if ui.button(tr(Key::ChapterEditor)).clicked() {
                 app.chapter_editor.open = true;
             }
-            ui.checkbox(&mut app.chapter_editor.use_for_conversion, tr(Key::UseChapterEdits));
+            ui.checkbox(
+                &mut app.chapter_editor.use_for_conversion,
+                tr(Key::UseChapterEdits),
+            );
             ui.add_space(6.0);
             ui.checkbox(&mut app.include_images_section, tr(Key::IncludeGallery));
             ui.checkbox(&mut app.inline_toc, tr(Key::InsertToc));

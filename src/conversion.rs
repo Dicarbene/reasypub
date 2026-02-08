@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use regex::Regex;
 
-use crate::epubworker::{build_epub, BuildError, EpubBuildOptions};
+use crate::epubworker::{BuildError, EpubBuildOptions, build_epub};
 use crate::{
     BookInfo, ChapterDraft, ConversionMethod, FontAsset, ImageAsset, Pattern, TextProcessor,
     TextStyle,
@@ -20,6 +20,8 @@ pub struct ConversionRequest {
     pub cover: Option<ImageAsset>,
     pub images: Vec<ImageAsset>,
     pub font: Option<FontAsset>,
+    pub chapter_header_image: Option<ImageAsset>,
+    pub chapter_header_fullbleed: bool,
     pub chapters_override: Option<Vec<ChapterDraft>>,
     pub include_images_section: bool,
     pub inline_toc: bool,
@@ -37,6 +39,8 @@ pub struct EpubPlanBuilder {
     cover: Option<ImageAsset>,
     images: Vec<ImageAsset>,
     font: Option<FontAsset>,
+    chapter_header_image: Option<ImageAsset>,
+    chapter_header_fullbleed: bool,
     include_images_section: bool,
     inline_toc: bool,
 }
@@ -51,6 +55,8 @@ impl EpubPlanBuilder {
             cover: None,
             images: Vec::new(),
             font: None,
+            chapter_header_image: None,
+            chapter_header_fullbleed: false,
             include_images_section: true,
             inline_toc: true,
         }
@@ -86,6 +92,16 @@ impl EpubPlanBuilder {
         self
     }
 
+    pub fn chapter_header_image(mut self, image: Option<ImageAsset>) -> Self {
+        self.chapter_header_image = image;
+        self
+    }
+
+    pub fn chapter_header_fullbleed(mut self, fullbleed: bool) -> Self {
+        self.chapter_header_fullbleed = fullbleed;
+        self
+    }
+
     pub fn include_images_section(mut self, include: bool) -> Self {
         self.include_images_section = include;
         self
@@ -105,6 +121,8 @@ impl EpubPlanBuilder {
             cover: self.cover,
             images: self.images,
             font: self.font,
+            chapter_header_image: self.chapter_header_image,
+            chapter_header_fullbleed: self.chapter_header_fullbleed,
             include_images_section: self.include_images_section,
             inline_toc: self.inline_toc,
         };
@@ -200,7 +218,9 @@ impl StrategyFactory {
             }
             ConversionMethod::CustomConfig => {
                 let path = config_path.ok_or_else(|| {
-                    ConversionError::InvalidInput("Please choose a valid regex config file.".to_string())
+                    ConversionError::InvalidInput(
+                        "Please choose a valid regex config file.".to_string(),
+                    )
                 })?;
                 let regex_str = std::fs::read_to_string(path)?;
                 let pattern = Pattern::Custom(Regex::new(regex_str.trim())?);
@@ -216,7 +236,9 @@ pub struct ConversionFacade;
 impl ConversionFacade {
     pub fn convert(req: ConversionRequest) -> Result<ConversionResult, ConversionError> {
         if req.text.trim().is_empty() {
-            return Err(ConversionError::InvalidInput("Text content is empty.".to_string()));
+            return Err(ConversionError::InvalidInput(
+                "Text content is empty.".to_string(),
+            ));
         }
 
         let chapters = if let Some(chapters) = req.chapters_override {
@@ -231,7 +253,9 @@ impl ConversionFacade {
         };
 
         if chapters.is_empty() {
-            return Err(ConversionError::InvalidInput("No chapters detected.".to_string()));
+            return Err(ConversionError::InvalidInput(
+                "No chapters detected.".to_string(),
+            ));
         }
 
         let output_path = EpubPlanBuilder::new(req.book_info)
@@ -241,6 +265,8 @@ impl ConversionFacade {
             .cover(req.cover)
             .images(req.images)
             .font(req.font)
+            .chapter_header_image(req.chapter_header_image)
+            .chapter_header_fullbleed(req.chapter_header_fullbleed)
             .include_images_section(req.include_images_section)
             .inline_toc(req.inline_toc)
             .build(&chapters)?;
@@ -252,18 +278,15 @@ impl ConversionFacade {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{SystemTime, UNIX_EPOCH};
     use std::path::Path;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn custom_regex_strategy_splits_chapters() {
         let text = "CHAPTER 1\nHello\nCHAPTER 2\nWorld\n";
-        let strategy = StrategyFactory::create(
-            ConversionMethod::Regex,
-            r"(?m)^CHAPTER\s+\d+",
-            None,
-        )
-        .expect("strategy");
+        let strategy =
+            StrategyFactory::create(ConversionMethod::Regex, r"(?m)^CHAPTER\s+\d+", None)
+                .expect("strategy");
         let chapters = strategy.split(text).expect("split");
         assert_eq!(chapters.len(), 2);
     }
@@ -282,8 +305,8 @@ mod tests {
     #[test]
     fn simple_rules_strategy_splits_chapters() {
         let text = "第1章 开始\n内容\n\n第2章 继续\n更多";
-        let strategy = StrategyFactory::create(ConversionMethod::SimpleRules, "", None)
-            .expect("strategy");
+        let strategy =
+            StrategyFactory::create(ConversionMethod::SimpleRules, "", None).expect("strategy");
         let chapters = strategy.split(text).expect("split");
         assert_eq!(chapters.len(), 2);
         assert_eq!(chapters[0].title, "第1章 开始");
@@ -293,8 +316,8 @@ mod tests {
     #[test]
     fn default_regex_strategy_matches_chinese_titles() {
         let text = "第1章 你好\n内容\n第2章 再见\n内容";
-        let strategy = StrategyFactory::create(ConversionMethod::Regex, "", None)
-            .expect("strategy");
+        let strategy =
+            StrategyFactory::create(ConversionMethod::Regex, "", None).expect("strategy");
         let chapters = strategy.split(text).expect("split");
         assert_eq!(chapters.len(), 2);
     }
@@ -324,6 +347,8 @@ mod tests {
             cover: None,
             images: Vec::new(),
             font: None,
+            chapter_header_image: None,
+            chapter_header_fullbleed: false,
             chapters_override: None,
             include_images_section: false,
             inline_toc: false,
@@ -349,6 +374,8 @@ mod tests {
             cover: None,
             images: Vec::new(),
             font: None,
+            chapter_header_image: None,
+            chapter_header_fullbleed: false,
             chapters_override: Some(Vec::new()),
             include_images_section: false,
             inline_toc: false,
@@ -383,6 +410,8 @@ mod tests {
             cover: None,
             images: Vec::new(),
             font: None,
+            chapter_header_image: None,
+            chapter_header_fullbleed: false,
             chapters_override: Some(vec![chapter]),
             include_images_section: false,
             inline_toc: false,
@@ -402,12 +431,8 @@ mod tests {
         let path = std::env::temp_dir().join(format!("reasypub-regex-{suffix}.txt"));
         std::fs::write(&path, r"(?m)^CHAPTER\s+\d+").expect("write regex");
 
-        let strategy = StrategyFactory::create(
-            ConversionMethod::CustomConfig,
-            "",
-            Some(&path),
-        )
-        .expect("strategy");
+        let strategy = StrategyFactory::create(ConversionMethod::CustomConfig, "", Some(&path))
+            .expect("strategy");
         let chapters = strategy
             .split("CHAPTER 1\nA\nCHAPTER 2\nB\n")
             .expect("split");
@@ -425,13 +450,9 @@ mod tests {
         let path = std::env::temp_dir().join(format!("reasypub-regex-bad-{suffix}.txt"));
         std::fs::write(&path, "(").expect("write regex");
 
-        let err = StrategyFactory::create(
-            ConversionMethod::CustomConfig,
-            "",
-            Some(&path),
-        )
-        .err()
-        .expect("error");
+        let err = StrategyFactory::create(ConversionMethod::CustomConfig, "", Some(&path))
+            .err()
+            .expect("error");
         match err {
             ConversionError::Regex(_) => {}
             other => panic!("unexpected error: {other:?}"),
@@ -443,13 +464,9 @@ mod tests {
     #[test]
     fn custom_config_missing_file_is_io_error() {
         let missing = Path::new("this-file-should-not-exist-regex.txt").to_path_buf();
-        let err = StrategyFactory::create(
-            ConversionMethod::CustomConfig,
-            "",
-            Some(&missing),
-        )
-        .err()
-        .expect("error");
+        let err = StrategyFactory::create(ConversionMethod::CustomConfig, "", Some(&missing))
+            .err()
+            .expect("error");
         match err {
             ConversionError::Io(_) => {}
             other => panic!("unexpected error: {other:?}"),
@@ -470,6 +487,8 @@ mod tests {
             cover: None,
             images: Vec::new(),
             font: None,
+            chapter_header_image: None,
+            chapter_header_fullbleed: false,
             chapters_override: Some(vec![ChapterDraft {
                 title: "Chapter 1".to_string(),
                 content: "Hello".to_string(),

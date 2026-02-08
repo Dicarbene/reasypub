@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use egui::{CollapsingHeader, Context, ScrollArea, Ui, Window};
+use egui::{Context, Id, Modal, ScrollArea, Ui};
 
 use crate::conversion::StrategyFactory;
-use crate::{t, t1, t2, ChapterDraft, ConversionMethod, Key, Locale};
+use crate::{ChapterDraft, ConversionMethod, Key, Locale, t, t1, t2};
 
 pub struct ChapterEditorInput<'a> {
     pub text: &'a str,
@@ -20,11 +20,14 @@ pub struct ChapterEditorState {
     pub stale: bool,
     pub error: Option<String>,
     last_refresh_signature: Option<u64>,
+    was_open: bool,
+    modal_size: Option<egui::Vec2>,
 }
 
 impl ChapterEditorState {
     pub fn show(&mut self, ctx: &Context, input: &ChapterEditorInput<'_>, locale: Locale) {
         if !self.open {
+            self.was_open = false;
             return;
         }
 
@@ -36,30 +39,68 @@ impl ChapterEditorState {
         );
         self.update_stale(current_signature);
 
-        let mut open = self.open;
-        Window::new(t(locale, Key::ChapterEditorTitle))
-            .open(&mut open)
-            .collapsible(false)
-            .resizable(true)
-            .default_width(860.0)
-            .default_height(640.0)
-            .show(ctx, |ui| {
+        let ignore_input = !self.was_open;
+        self.was_open = true;
+
+        let fixed_size = *self.modal_size.get_or_insert_with(|| {
+            let screen = ctx.content_rect();
+            let width = 860.0_f32.min(screen.width() * 0.95).max(420.0);
+            let height = 640.0_f32.min(screen.height() * 0.92).max(320.0);
+            egui::vec2(width, height)
+        });
+        let mut request_close = false;
+
+        let modal = Modal::new(Id::new("chapter_editor_modal")).show(ctx, |ui| {
+            ui.set_min_size(fixed_size);
+            ui.set_max_size(fixed_size);
+
+            let mut render_body = |ui: &mut Ui| {
+                ui.horizontal(|ui| {
+                    ui.heading(t(locale, Key::ChapterEditorTitle));
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button(t(locale, Key::Close)).clicked() {
+                            request_close = true;
+                            ui.close();
+                        }
+                    });
+                });
+
+                ui.add_space(8.0);
+                ui.separator();
+                ui.add_space(8.0);
+
                 self.header_ui(ui, input, current_signature, locale);
                 ui.add_space(8.0);
                 ui.separator();
                 ui.add_space(8.0);
 
-                ScrollArea::vertical().show(ui, |ui| {
-                    if self.chapters.is_empty() {
-                        ui.centered_and_justified(|ui| {
-                            ui.label(t(locale, Key::NoChapters));
-                        });
-                    } else {
-                        self.chapters_ui(ui, locale);
-                    }
-                });
-            });
-        self.open = open;
+                let scroll_height = ui.available_height().max(120.0);
+                ScrollArea::vertical()
+                    .auto_shrink([false, false])
+                    .max_height(scroll_height)
+                    .show(ui, |ui| {
+                        if self.chapters.is_empty() {
+                            ui.centered_and_justified(|ui| {
+                                ui.label(t(locale, Key::NoChapters));
+                            });
+                        } else {
+                            self.chapters_ui(ui, locale);
+                        }
+                    });
+            };
+
+            if ignore_input {
+                ui.add_enabled_ui(false, |ui| render_body(ui));
+            } else {
+                render_body(ui);
+            }
+        });
+
+        if request_close || modal.should_close() {
+            self.open = false;
+            self.was_open = false;
+            self.modal_size = None;
+        }
     }
 
     fn header_ui(
@@ -89,7 +130,10 @@ impl ChapterEditorState {
         });
 
         ui.horizontal(|ui| {
-            ui.checkbox(&mut self.use_for_conversion, t(locale, Key::UseChapterEdits));
+            ui.checkbox(
+                &mut self.use_for_conversion,
+                t(locale, Key::UseChapterEdits),
+            );
             if self.stale {
                 ui.label(
                     egui::RichText::new(t(locale, Key::ChapterWarningStale))
@@ -112,27 +156,46 @@ impl ChapterEditorState {
         let total = self.chapters.len();
         for (index, chapter) in self.chapters.iter_mut().enumerate() {
             let header = t2(locale, Key::ChapterIndex, index + 1, &chapter.title);
-            CollapsingHeader::new(header)
-                .default_open(index < 2)
-                .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        if ui.small_button(t(locale, Key::Up)).clicked() && index > 0 {
-                            move_actions.push((index, -1));
-                        }
-                        if ui.small_button(t(locale, Key::Down)).clicked() && index + 1 < total {
-                            move_actions.push((index, 1));
-                        }
-                        if ui.small_button(t(locale, Key::Delete)).clicked() {
-                            remove_indices.push(index);
-                        }
-                    });
+            let header_id = ui.make_persistent_id(("chapter_editor_chapter", index));
+            let header_response = egui::collapsing_header::CollapsingState::load_with_default_open(
+                ui.ctx(),
+                header_id,
+                index < 2,
+            )
+            .show_header(ui, |ui| {
+                ui.add(egui::Label::new(header).wrap());
+            });
 
-                    ui.label(t(locale, Key::ChapterTitle));
-                    ui.text_edit_singleline(&mut chapter.title);
-                    ui.add_space(6.0);
-                    ui.label(t(locale, Key::ChapterContent));
-                    ui.text_edit_multiline(&mut chapter.content);
+            header_response.body(|ui| {
+                ui.horizontal(|ui| {
+                    if ui.small_button(t(locale, Key::Up)).clicked() && index > 0 {
+                        move_actions.push((index, -1));
+                    }
+                    if ui.small_button(t(locale, Key::Down)).clicked() && index + 1 < total {
+                        move_actions.push((index, 1));
+                    }
+                    if ui.small_button(t(locale, Key::Delete)).clicked() {
+                        remove_indices.push(index);
+                    }
                 });
+
+                ui.label(t(locale, Key::ChapterTitle));
+                let title_width = ui.available_width().max(120.0);
+                ui.add_sized(
+                    [title_width, ui.spacing().interact_size.y],
+                    egui::TextEdit::singleline(&mut chapter.title),
+                );
+                ui.add_space(6.0);
+                ui.label(t(locale, Key::ChapterContent));
+                let content_height = 160.0;
+                let content_width = ui.available_width().max(120.0);
+                ui.add_sized(
+                    [content_width, content_height],
+                    egui::TextEdit::multiline(&mut chapter.content)
+                        .desired_rows(8)
+                        .lock_focus(true),
+                );
+            });
             ui.add_space(6.0);
         }
 
@@ -178,4 +241,3 @@ impl ChapterEditorState {
         stale
     }
 }
-

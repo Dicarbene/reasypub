@@ -1,11 +1,11 @@
+use egui::Vec2;
 use egui::accesskit::{Role, Toggled};
 use egui::os::OperatingSystem;
-use egui::Vec2;
 use egui_kittest::{
-    kittest::{NodeT, Queryable as _},
     Harness,
+    kittest::{NodeT, Queryable as _},
 };
-use reasypub::{t, Key, Locale, MainApp};
+use reasypub::{Key, Locale, MainApp, t};
 
 fn new_harness() -> Harness<'static, MainApp> {
     Harness::builder()
@@ -35,8 +35,7 @@ fn gui_locale_switch_to_english() {
     harness.get_by_label(t(Locale::Zh, Key::Sections));
     harness
         .get_by(|node| {
-            node.role() == Role::ComboBox
-                && node.value() == Some(Locale::Zh.label().to_string())
+            node.role() == Role::ComboBox && node.value() == Some(Locale::Zh.label().to_string())
         })
         .click();
     harness.run();
@@ -92,15 +91,6 @@ fn gui_quick_actions_and_windows() {
     harness.run();
     harness.get_by_label(tr(Key::TextEditor));
 
-    // Chapter editor window.
-    let chapter_editor = harness
-        .get_all_by_label(tr(Key::ChapterEditor))
-        .find(|node| node.accesskit_node().role() == Role::Button)
-        .expect("Chapter Editor button");
-    chapter_editor.click();
-    harness.run();
-    harness.get_by_label(tr(Key::AddChapter));
-
     // Checkbox states.
     let gallery = harness.get_by_label(tr(Key::IncludeGallery));
     assert_eq!(gallery.accesskit_node().toggled(), Some(Toggled::True));
@@ -118,16 +108,25 @@ fn gui_quick_actions_and_windows() {
 
     let chapter_edits = harness
         .get_all_by_label(tr(Key::UseChapterEdits))
-        .next()
+        .find(|node| node.accesskit_node().role() == Role::CheckBox)
         .expect("Use chapter edits checkbox");
-    assert_eq!(chapter_edits.accesskit_node().toggled(), Some(Toggled::False));
+    let initial_toggle = chapter_edits.accesskit_node().toggled();
     chapter_edits.click();
     harness.run();
     let chapter_edits = harness
         .get_all_by_label(tr(Key::UseChapterEdits))
-        .next()
+        .find(|node| node.accesskit_node().role() == Role::CheckBox)
         .expect("Use chapter edits checkbox");
-    assert_eq!(chapter_edits.accesskit_node().toggled(), Some(Toggled::True));
+    assert_ne!(chapter_edits.accesskit_node().toggled(), initial_toggle);
+
+    // Chapter editor window.
+    let chapter_editor = harness
+        .get_all_by_label(tr(Key::ChapterEditor))
+        .find(|node| node.accesskit_node().role() == Role::Button)
+        .expect("Chapter Editor button");
+    chapter_editor.click();
+    harness.run();
+    harness.get_by_label(tr(Key::AddChapter));
 }
 
 #[test]

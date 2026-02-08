@@ -6,7 +6,7 @@ pub mod conversion;
 pub mod epubworker;
 pub mod i18n;
 
-pub use i18n::{t, t1, t2, Key, Locale};
+pub use i18n::{Key, Locale, t, t1, t2};
 
 pub use app::MainApp;
 use bytes::Bytes;
@@ -299,7 +299,8 @@ impl CssTemplate {
 
     pub fn css(&self) -> &'static str {
         match self {
-            CssTemplate::Classic => r#"
+            CssTemplate::Classic => {
+                r#"
 body {
   font-family: "Latin Modern Roman", "CMU Serif", "STIX Two Text", "Source Serif 4", "Garamond",
     "Georgia", "Times New Roman", serif;
@@ -335,8 +336,10 @@ p {
   margin-top: 0.9em;
   margin-bottom: 0.3em;
 }
-"#,
-            CssTemplate::Modern => r#"
+"#
+            }
+            CssTemplate::Modern => {
+                r#"
 body {
   font-family: "Source Serif 4", "Noto Serif", "Georgia", "Times New Roman", serif;
   font-kerning: normal;
@@ -363,8 +366,10 @@ p {
   margin-top: 0.6em;
   margin-bottom: 0.2em;
 }
-"#,
-            CssTemplate::Clean => r#"
+"#
+            }
+            CssTemplate::Clean => {
+                r#"
 body { font-family: "Georgia", "Times New Roman", serif; }
 h2 { letter-spacing: 0.04em; font-weight: 600; text-align: center; margin-top: 1.6em; margin-bottom: 1em; }
 p {
@@ -377,8 +382,10 @@ p {
   -moz-hyphens: auto;
 }
 .chapter-label { font-size: 0.8em; color: #3b3b3b; letter-spacing: 0.2em; text-align: center; }
-"#,
-            CssTemplate::Elegant => r#"
+"#
+            }
+            CssTemplate::Elegant => {
+                r#"
 body {
   font-family: "Garamond", "Palatino", "Times New Roman", serif;
   font-variant-ligatures: common-ligatures;
@@ -411,8 +418,10 @@ p {
   margin-top: 1em;
   margin-bottom: 0.35em;
 }
-"#,
-            CssTemplate::Folio => r#"
+"#
+            }
+            CssTemplate::Folio => {
+                r#"
 body {
   font-family: "Baskerville", "Garamond", "Palatino", "Times New Roman", serif;
   font-variant-ligatures: common-ligatures;
@@ -444,8 +453,10 @@ p {
   margin-top: 0.8em;
   margin-bottom: 0.3em;
 }
-"#,
-            CssTemplate::Fantasy => r#"
+"#
+            }
+            CssTemplate::Fantasy => {
+                r#"
 body {
   font-family: "kt", "KaiTi", "STKaiti", "Kaiti SC", "Baskerville", "Garamond", serif;
   font-variant-ligatures: common-ligatures;
@@ -478,8 +489,10 @@ p {
   margin-top: 0.9em;
   margin-bottom: 0.35em;
 }
-"#,
-            CssTemplate::Minimal => r#"
+"#
+            }
+            CssTemplate::Minimal => {
+                r#"
 body { font-family: "Times New Roman", "Georgia", serif; }
 h1, h2, h3, h4 { font-family: "Times New Roman", "Georgia", serif; letter-spacing: 0.04em; }
 h2 { font-weight: normal; text-align: center; margin-top: 1.4em; margin-bottom: 0.9em; }
@@ -493,7 +506,8 @@ p {
   -moz-hyphens: auto;
 }
 .chapter-label { font-size: 0.76em; color: #2f2f2f; letter-spacing: 0.22em; text-align: center; }
-"#,
+"#
+            }
         }
     }
 }
@@ -513,6 +527,7 @@ impl std::fmt::Display for CssTemplate {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(default)]
 pub struct TextStyle {
     pub line_height: f32,
     pub paragraph_spacing: f32,
@@ -522,6 +537,10 @@ pub struct TextStyle {
     pub font_path: String,
     pub css_template: CssTemplate,
     pub custom_css: String,
+    pub extra_body_class: String,
+    pub extra_chapter_class: String,
+    pub extra_title_class: String,
+    pub extra_paragraph_class: String,
 }
 
 impl Default for TextStyle {
@@ -535,6 +554,10 @@ impl Default for TextStyle {
             font_path: String::new(),
             css_template: CssTemplate::Classic,
             custom_css: String::new(),
+            extra_body_class: String::new(),
+            extra_chapter_class: String::new(),
+            extra_title_class: String::new(),
+            extra_paragraph_class: String::new(),
         }
     }
 }
@@ -548,7 +571,11 @@ pub struct ChapterDraft {
 impl ChapterDraft {
     pub fn from_raw(raw: &str) -> Self {
         let mut lines = raw.lines();
-        let title = lines.next().unwrap_or("Untitled Chapter").trim().to_string();
+        let title = lines
+            .next()
+            .unwrap_or("Untitled Chapter")
+            .trim()
+            .to_string();
         let content = lines.collect::<Vec<_>>().join("\n");
         Self { title, content }
     }
@@ -702,7 +729,8 @@ impl TextProcessor {
         }
 
         let specials = [
-            "序章", "序言", "序", "楔子", "引子", "前言", "后记", "尾声", "终章", "番外", "外传", "附录",
+            "序章", "序言", "序", "楔子", "引子", "前言", "后记", "尾声", "终章", "番外", "外传",
+            "附录",
         ];
         if specials.iter().any(|&s| line == s || line.starts_with(s)) {
             return true;
@@ -718,9 +746,7 @@ impl TextProcessor {
         if line.starts_with('卷') {
             let numerals = "一二三四五六七八九十零〇○百千万两";
             let has_num = line.chars().skip(1).any(|ch| {
-                ch.is_ascii_digit()
-                    || ('０'..='９').contains(&ch)
-                    || numerals.contains(ch)
+                ch.is_ascii_digit() || ('０'..='９').contains(&ch) || numerals.contains(ch)
             });
             return has_num;
         }

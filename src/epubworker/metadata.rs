@@ -13,7 +13,11 @@ pub(super) fn add_optional_metadata(
     Ok(())
 }
 
-pub(super) fn add_optional_meta_tag(builder: &mut EpubBuilder<ZipLibrary>, name: &str, value: &str) {
+pub(super) fn add_optional_meta_tag(
+    builder: &mut EpubBuilder<ZipLibrary>,
+    name: &str,
+    value: &str,
+) {
     if value.trim().is_empty() {
         return;
     }
