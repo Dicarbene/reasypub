@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report a reproducible bug for Reasypub desktop/web.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please provide enough detail to reproduce.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Where did the issue happen?
+      options:
+        - Windows desktop
+        - Linux desktop
+        - macOS desktop
+        - Web (browser)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App Version
+      description: e.g. v0.9.0-rc.1
+      placeholder: v0.9.0-rc.1
+    validations:
+      required: true
+
+  - type: input
+    id: input_profile
+    attributes:
+      label: Input File Characteristics
+      description: TXT size/encoding/chapter style; cover/image/font info if relevant.
+      placeholder: "UTF-8, ~2MB, chapter titles like 第xx章 ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction Steps
+      description: Clear step-by-step process.
+      placeholder: |
+        1. Open app
+        2. Import txt ...
+        3. Click convert ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: EPUB should be generated without errors.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      placeholder: Conversion failed with ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Console Output
+      description: Paste relevant logs or browser console output.
+      render: shell
+
+  - type: textarea
+    id: output_sample
+    attributes:
+      label: Output EPUB / Sample Files
+      description: Attach output EPUB or minimal input sample if possible.
+

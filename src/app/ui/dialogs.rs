@@ -80,13 +80,21 @@ pub(super) fn dialogs(app: &mut MainApp, ctx: &egui::Context) {
                         ui.add_space(20.0);
 
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::OpenFolder)).clicked()
-                                && let Some(path) = PathBuf::from(output_path).parent()
-                            {
-                                let _ = open_in_file_manager(path);
+                            if ui.button(tr(Key::OpenFolder)).clicked() {
+                                if let Some(path) = PathBuf::from(output_path).parent() {
+                                    let _ = open_in_file_manager(path);
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice =
+                                        Some(tr(Key::DesktopOnlyAction).to_string());
+                                }
                             }
                             if ui.button(tr(Key::OpenFile)).clicked() {
-                                let _ = open_in_file_manager(Path::new(output_path));
+                                if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice =
+                                        Some(tr(Key::DesktopOnlyAction).to_string());
+                                } else {
+                                    let _ = open_in_file_manager(Path::new(output_path));
+                                }
                             }
                         });
                     }

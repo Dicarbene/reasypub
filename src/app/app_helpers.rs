@@ -304,33 +304,35 @@ pub(super) fn readtxt(
     input_txt: &mut TextFileReader,
     input_txt_path: &mut String,
     book_info: &mut BookInfo,
+    runtime_notice: &mut Option<String>,
 ) {
     ui.horizontal(|ui| {
-        if ui.button(t(locale, Key::OpenTextFile)).clicked()
-            && let Some(path) = pick_text_file(t(locale, Key::TextFileFilter))
-        {
-            match std::fs::read_to_string(&path) {
-                Ok(content) => {
-                    input_txt.content = content;
-                    input_txt.error = None;
-                    input_txt.path = Some(path.clone());
-                    // txt路径显示
-                    *input_txt_path = path.to_string_lossy().to_string();
+        if ui.button(t(locale, Key::OpenTextFile)).clicked() {
+            if let Some(path) = pick_text_file(t(locale, Key::TextFileFilter)) {
+                match std::fs::read_to_string(&path) {
+                    Ok(content) => {
+                        input_txt.content = content;
+                        input_txt.error = None;
+                        input_txt.path = Some(path.clone());
+                        *input_txt_path = path.to_string_lossy().to_string();
+                        *runtime_notice = None;
 
-                    // 从文件名中自动提取书名和作者
-                    if let Some(filename) = path.file_name().and_then(|s| s.to_str()) {
-                        let (title, author) = parse_filename_to_book_info(filename);
-                        if book_info.title.trim().is_empty() {
-                            book_info.title = title;
-                        }
-                        if book_info.author.trim().is_empty() {
-                            book_info.author = author;
+                        if let Some(filename) = path.file_name().and_then(|s| s.to_str()) {
+                            let (title, author) = parse_filename_to_book_info(filename);
+                            if book_info.title.trim().is_empty() {
+                                book_info.title = title;
+                            }
+                            if book_info.author.trim().is_empty() {
+                                book_info.author = author;
+                            }
                         }
                     }
+                    Err(e) => {
+                        input_txt.error = Some(t1(locale, Key::ReadFailed, e));
+                    }
                 }
-                Err(e) => {
-                    input_txt.error = Some(t1(locale, Key::ReadFailed, e));
-                }
+            } else if cfg!(target_arch = "wasm32") {
+                *runtime_notice = Some(t(locale, Key::DesktopOnlyAction).to_string());
             }
         }
 

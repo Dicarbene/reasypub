@@ -144,6 +144,7 @@ pub enum Key {
     ChapterContent,
     Up,
     Down,
+    DesktopOnlyAction,
 }
 
 pub fn t(locale: Locale, key: Key) -> &'static str {
@@ -398,6 +399,8 @@ pub fn t(locale: Locale, key: Key) -> &'static str {
         (Locale::Zh, Key::Up) => "上移",
         (Locale::En, Key::Down) => "Down",
         (Locale::Zh, Key::Down) => "下移",
+        (Locale::En, Key::DesktopOnlyAction) => "This action is available in desktop builds only.",
+        (Locale::Zh, Key::DesktopOnlyAction) => "此操作仅在桌面版可用。",
     }
 }
 

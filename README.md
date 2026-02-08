@@ -7,6 +7,16 @@ Reasypub 是一款将 TXT 文本转换为 EPUB 的桌面应用，提供分章识
 
 Reasypub is a desktop app that converts TXT files into EPUB, with chapter splitting, chapter editing, cover/font/style customization, illustration management, bilingual UI, and light/dark themes.
 
+## Version Lifecycle
+
+- Current milestone: `0.9.0-rc.1` (release candidate).
+- RC goal: collect small-scope desktop + web feedback and eliminate crash-class defects.
+- `1.0.0` gate: all automated checks green, no open P0/P1 issues, and manual regression passed.
+- Release governance docs:
+  - `CHANGELOG.md`
+  - `SUPPORT_MATRIX.md`
+  - `RELEASE_CHECKLIST.md`
+
 ---
 
 ## 主要特性 / Key Features

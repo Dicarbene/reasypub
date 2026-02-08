@@ -102,35 +102,47 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                         &mut app.input_file,
                         &mut app.input_txt_path,
                         &mut app.book_info,
+                        &mut app.runtime_notice,
                     );
 
-                    ui.horizontal(|ui| {
-                        if ui.button(tr(Key::ChangeCover)).clicked()
-                            && let Some(path) =
-                                pick_image_file(tr(Key::PanelImages), &["jpeg", "png", "webp", "jpg"])
-                        {
-                            if let Ok(metadata) = std::fs::metadata(&path)
-                                && metadata.len() > 10 * 1024 * 1024
-                            {
-                                app.input_image.error = Some(t(locale, Key::FileTooLarge).to_string());
-                                return;
-                            }
+                    if let Some(notice) = &app.runtime_notice {
+                        ui.add_space(4.0);
+                        ui.label(
+                            egui::RichText::new(notice).color(egui::Color32::from_rgb(207, 95, 38)),
+                        );
+                    }
 
-                            match std::fs::read(&path) {
-                                Ok(content) => {
-                                    app.input_image.content = Bytes::from(content);
-                                    app.input_image.error = None;
-                                    app.input_image.path = Some(path.clone());
-                                    app.input_image_path = path.to_string_lossy().to_string();
-                                    app.input_image.caption = path
-                                        .file_stem()
-                                        .and_then(|s| s.to_str())
-                                        .map(|s| s.to_string());
-                                    app.input_image.texture = None;
+                    ui.horizontal(|ui| {
+                        if ui.button(tr(Key::ChangeCover)).clicked() {
+                            if let Some(path) =
+                                pick_image_file(tr(Key::PanelImages), &["jpeg", "png", "webp", "jpg"])
+                            {
+                                app.runtime_notice = None;
+                                if let Ok(metadata) = std::fs::metadata(&path)
+                                    && metadata.len() > 10 * 1024 * 1024
+                                {
+                                    app.input_image.error = Some(t(locale, Key::FileTooLarge).to_string());
+                                    return;
                                 }
-                                Err(e) => {
-                                    app.input_image.error = Some(t1(locale, Key::ReadFailed, e));
+
+                                match std::fs::read(&path) {
+                                    Ok(content) => {
+                                        app.input_image.content = Bytes::from(content);
+                                        app.input_image.error = None;
+                                        app.input_image.path = Some(path.clone());
+                                        app.input_image_path = path.to_string_lossy().to_string();
+                                        app.input_image.caption = path
+                                            .file_stem()
+                                            .and_then(|s| s.to_str())
+                                            .map(|s| s.to_string());
+                                        app.input_image.texture = None;
+                                    }
+                                    Err(e) => {
+                                        app.input_image.error = Some(t1(locale, Key::ReadFailed, e));
+                                    }
                                 }
+                            } else if cfg!(target_arch = "wasm32") {
+                                app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
                             }
                         }
                         if ui.button(tr(Key::ClearCover)).clicked() {
@@ -191,14 +203,20 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                                         );
                                         ui.horizontal(|ui| {
                                             if ui.button(tr(Key::ChooseConfigFile)).clicked()
-                                                && let Some(path) =
-                                                    pick_config_file(tr(Key::TextFileFilter))
                                             {
-                                                app.custom_regex_file = Some(path.clone());
-                                                app.custom_regex_path =
-                                                    path.to_string_lossy().to_string();
-                                                app.custom_regex_status =
-                                                    Some(app.validate_custom_config(locale, &path));
+                                                if let Some(path) =
+                                                    pick_config_file(tr(Key::TextFileFilter))
+                                                {
+                                                    app.runtime_notice = None;
+                                                    app.custom_regex_file = Some(path.clone());
+                                                    app.custom_regex_path =
+                                                        path.to_string_lossy().to_string();
+                                                    app.custom_regex_status =
+                                                        Some(app.validate_custom_config(locale, &path));
+                                                } else if cfg!(target_arch = "wasm32") {
+                                                    app.runtime_notice =
+                                                        Some(tr(Key::DesktopOnlyAction).to_string());
+                                                }
                                             }
                                             if ui.button(tr(Key::ClearConfig)).clicked() {
                                                 app.custom_regex_file = None;
@@ -390,16 +408,23 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
 
                         ui.add_space(10.0);
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::ImportCss)).clicked()
-                                && let Some(path) = pick_css_import_file()
-                                && let Ok(content) = std::fs::read_to_string(&path)
-                            {
-                                app.text_style.custom_css = content;
+                            if ui.button(tr(Key::ImportCss)).clicked() {
+                                if let Some(path) = pick_css_import_file() {
+                                    app.runtime_notice = None;
+                                    if let Ok(content) = std::fs::read_to_string(&path) {
+                                        app.text_style.custom_css = content;
+                                    }
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
+                                }
                             }
-                            if ui.button(tr(Key::ExportCss)).clicked()
-                                && let Some(path) = pick_css_export_file()
-                            {
-                                let _ = std::fs::write(&path, &app.text_style.custom_css);
+                            if ui.button(tr(Key::ExportCss)).clicked() {
+                                if let Some(path) = pick_css_export_file() {
+                                    app.runtime_notice = None;
+                                    let _ = std::fs::write(&path, &app.text_style.custom_css);
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
+                                }
                             }
                         });
 
@@ -408,12 +433,16 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                         ui.add_space(8.0);
                         ui.label(tr(Key::ChapterHeaderImage));
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::ChooseChapterHeader)).clicked()
-                                && let Some(path) =
+                            if ui.button(tr(Key::ChooseChapterHeader)).clicked() {
+                                if let Some(path) =
                                     pick_image_file(tr(Key::PanelImages), &["jpeg", "png", "webp", "jpg"])
-                            {
-                                app.chapter_header_image = image_reader_from_path(locale, &path);
-                                app.chapter_header_image_path = path.to_string_lossy().to_string();
+                                {
+                                    app.runtime_notice = None;
+                                    app.chapter_header_image = image_reader_from_path(locale, &path);
+                                    app.chapter_header_image_path = path.to_string_lossy().to_string();
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
+                                }
                             }
                             if ui.button(tr(Key::ClearChapterHeader)).clicked() {
                                 app.chapter_header_image = ImageFileReader::default();
@@ -466,18 +495,22 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                             ui.color_edit_button_srgba(&mut app.text_style.font_color);
                         });
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::ChooseFont)).clicked()
-                                && let Some(path) = pick_font_file(tr(Key::PanelFonts))
-                            {
-                                match load_font_asset(&path) {
-                                    Ok(asset) => {
-                                        app.font_asset = Some(asset);
-                                        app.font_error = None;
-                                        app.text_style.font_path = path.to_string_lossy().to_string();
+                            if ui.button(tr(Key::ChooseFont)).clicked() {
+                                if let Some(path) = pick_font_file(tr(Key::PanelFonts)) {
+                                    app.runtime_notice = None;
+                                    match load_font_asset(&path) {
+                                        Ok(asset) => {
+                                            app.font_asset = Some(asset);
+                                            app.font_error = None;
+                                            app.text_style.font_path =
+                                                path.to_string_lossy().to_string();
+                                        }
+                                        Err(err) => {
+                                            app.font_error = Some(t1(locale, Key::ReadFailed, err));
+                                        }
                                     }
-                                    Err(err) => {
-                                        app.font_error = Some(t1(locale, Key::ReadFailed, err));
-                                    }
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
                                 }
                             }
                             if ui.button(tr(Key::ClearFont)).clicked() {
@@ -493,13 +526,16 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                     }
                     PanelIndex::Images => {
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::AddImage)).clicked()
-                                && let Some(path) = pick_image_file(
+                            if ui.button(tr(Key::AddImage)).clicked() {
+                                if let Some(path) = pick_image_file(
                                     tr(Key::PanelImages),
                                     &["jpeg", "png", "webp", "jpg", "gif"],
-                                )
-                            {
-                                app.images.push(image_reader_from_path(locale, &path));
+                                ) {
+                                    app.runtime_notice = None;
+                                    app.images.push(image_reader_from_path(locale, &path));
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
+                                }
                             }
                             ui.label(t1(locale, Key::TotalImages, app.images.len()));
                         });
@@ -562,14 +598,17 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
 
                         ui.add_space(8.0);
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::BatchImport)).clicked()
-                                && let Some(paths) = pick_image_files(
+                            if ui.button(tr(Key::BatchImport)).clicked() {
+                                if let Some(paths) = pick_image_files(
                                     tr(Key::PanelImages),
                                     &["jpeg", "png", "webp", "jpg", "gif"],
-                                )
-                            {
-                                for path in paths {
-                                    app.images.push(image_reader_from_path(locale, &path));
+                                ) {
+                                    app.runtime_notice = None;
+                                    for path in paths {
+                                        app.images.push(image_reader_from_path(locale, &path));
+                                    }
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
                                 }
                             }
                             if ui.button(tr(Key::ClearAll)).clicked() {
@@ -596,10 +635,13 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                         ui.label(tr(Key::OutputFolder));
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(&mut app.output_path);
-                            if ui.button(tr(Key::Browse)).clicked()
-                                && let Some(path) = pick_folder()
-                            {
-                                app.output_path = path.to_string_lossy().to_string();
+                            if ui.button(tr(Key::Browse)).clicked() {
+                                if let Some(path) = pick_folder() {
+                                    app.runtime_notice = None;
+                                    app.output_path = path.to_string_lossy().to_string();
+                                } else if cfg!(target_arch = "wasm32") {
+                                    app.runtime_notice = Some(tr(Key::DesktopOnlyAction).to_string());
+                                }
                             }
                         });
 

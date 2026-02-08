@@ -77,6 +77,8 @@ pub struct MainApp {
     font_asset: Option<FontAsset>,
     #[serde(skip)]
     font_error: Option<String>,
+    #[serde(skip)]
+    runtime_notice: Option<String>,
     chapter_header_fullbleed: bool, // 章头图全宽/全屏
 }
 
@@ -144,6 +146,7 @@ impl Default for MainApp {
             chapter_header_image: ImageFileReader::default(),
             font_asset: None,
             font_error: None,
+            runtime_notice: None,
             chapter_header_fullbleed: false,
         }
     }
