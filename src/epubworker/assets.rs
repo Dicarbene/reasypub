@@ -19,7 +19,7 @@ pub(super) fn add_fantasy_assets(builder: &mut EpubBuilder<ZipLibrary>) -> Resul
     ];
     for (source, dest) in image_assets {
         let bytes = fs::read(source)?;
-        builder.add_resource(dest.to_string(), Cursor::new(bytes), "image/webp")?;
+        builder.add_resource(dest, Cursor::new(bytes), "image/webp")?;
     }
 
     let font_assets = [
@@ -31,7 +31,7 @@ pub(super) fn add_fantasy_assets(builder: &mut EpubBuilder<ZipLibrary>) -> Resul
     ];
     for (source, dest) in font_assets {
         let bytes = fs::read(source)?;
-        builder.add_resource(dest.to_string(), Cursor::new(bytes), "font/ttf")?;
+        builder.add_resource(dest, Cursor::new(bytes), "font/ttf")?;
     }
 
     Ok(())

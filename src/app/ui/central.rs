@@ -1,16 +1,90 @@
-﻿use bytes::Bytes;
+use bytes::Bytes;
 use regex::Regex;
+#[cfg(not(target_arch = "wasm32"))]
 use rfd::FileDialog;
+use std::path::PathBuf;
 
-use crate::{
-    t, t1, t2, ConversionMethod, CssTemplate, ImageFileReader, Key, PanelIndex,
-};
+use crate::{ConversionMethod, CssTemplate, ImageFileReader, Key, PanelIndex, t, t1, t2};
 
+use super::super::MainApp;
 use super::super::app_helpers::{
     card, image_reader_from_path, load_font_asset, powered_by_egui_and_eframe, primary_button,
     readtxt,
 };
-use super::super::MainApp;
+
+#[cfg(not(target_arch = "wasm32"))]
+fn pick_image_file(filter_name: &str, exts: &[&str]) -> Option<PathBuf> {
+    FileDialog::new().add_filter(filter_name, exts).pick_file()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn pick_image_file(_filter_name: &str, _exts: &[&str]) -> Option<PathBuf> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn pick_config_file(filter_name: &str) -> Option<PathBuf> {
+    FileDialog::new()
+        .add_filter(filter_name, &["txt", "conf", "regex"])
+        .pick_file()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn pick_config_file(_filter_name: &str) -> Option<PathBuf> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn pick_css_import_file() -> Option<PathBuf> {
+    FileDialog::new().add_filter("CSS", &["css"]).pick_file()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn pick_css_import_file() -> Option<PathBuf> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn pick_css_export_file() -> Option<PathBuf> {
+    FileDialog::new().add_filter("CSS", &["css"]).save_file()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn pick_css_export_file() -> Option<PathBuf> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn pick_font_file(filter_name: &str) -> Option<PathBuf> {
+    FileDialog::new()
+        .add_filter(filter_name, &["ttf", "otf"])
+        .pick_file()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn pick_font_file(_filter_name: &str) -> Option<PathBuf> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn pick_image_files(filter_name: &str, exts: &[&str]) -> Option<Vec<PathBuf>> {
+    FileDialog::new().add_filter(filter_name, exts).pick_files()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn pick_image_files(_filter_name: &str, _exts: &[&str]) -> Option<Vec<PathBuf>> {
+    None
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn pick_folder() -> Option<PathBuf> {
+    FileDialog::new().pick_folder()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn pick_folder() -> Option<PathBuf> {
+    None
+}
 
 pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
     let locale = app.locale;
@@ -31,34 +105,31 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                     );
 
                     ui.horizontal(|ui| {
-                        if ui.button(tr(Key::ChangeCover)).clicked() {
-                            if let Some(path) = FileDialog::new()
-                                .add_filter(tr(Key::PanelImages), &["jpeg", "png", "webp", "jpg"])
-                                .pick_file()
+                        if ui.button(tr(Key::ChangeCover)).clicked()
+                            && let Some(path) =
+                                pick_image_file(tr(Key::PanelImages), &["jpeg", "png", "webp", "jpg"])
+                        {
+                            if let Ok(metadata) = std::fs::metadata(&path)
+                                && metadata.len() > 10 * 1024 * 1024
                             {
-                                if let Ok(metadata) = std::fs::metadata(&path) {
-                                    if metadata.len() > 10 * 1024 * 1024 {
-                                        app.input_image.error =
-                                            Some(t(locale, Key::FileTooLarge).to_string());
-                                        return;
-                                    }
-                                }
+                                app.input_image.error = Some(t(locale, Key::FileTooLarge).to_string());
+                                return;
+                            }
 
-                                match std::fs::read(&path) {
-                                    Ok(content) => {
-                                        app.input_image.content = Bytes::from(content);
-                                        app.input_image.error = None;
-                                        app.input_image.path = Some(path.clone());
-                                        app.input_image_path = path.to_string_lossy().to_string();
-                                        app.input_image.caption = path
-                                            .file_stem()
-                                            .and_then(|s| s.to_str())
-                                            .map(|s| s.to_string());
-                                        app.input_image.texture = None;
-                                    }
-                                    Err(e) => {
-                                        app.input_image.error = Some(t1(locale, Key::ReadFailed, e));
-                                    }
+                            match std::fs::read(&path) {
+                                Ok(content) => {
+                                    app.input_image.content = Bytes::from(content);
+                                    app.input_image.error = None;
+                                    app.input_image.path = Some(path.clone());
+                                    app.input_image_path = path.to_string_lossy().to_string();
+                                    app.input_image.caption = path
+                                        .file_stem()
+                                        .and_then(|s| s.to_str())
+                                        .map(|s| s.to_string());
+                                    app.input_image.texture = None;
+                                }
+                                Err(e) => {
+                                    app.input_image.error = Some(t1(locale, Key::ReadFailed, e));
                                 }
                             }
                         }
@@ -119,21 +190,15 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                                             method.label(locale),
                                         );
                                         ui.horizontal(|ui| {
-                                            if ui.button(tr(Key::ChooseConfigFile)).clicked() {
-                                                if let Some(path) = FileDialog::new()
-                                                    .add_filter(
-                                                        tr(Key::TextFileFilter),
-                                                        &["txt", "conf", "regex"],
-                                                    )
-                                                    .pick_file()
-                                                {
-                                                    app.custom_regex_file = Some(path.clone());
-                                                    app.custom_regex_path =
-                                                        path.to_string_lossy().to_string();
-                                                    app.custom_regex_status = Some(
-                                                        app.validate_custom_config(locale, &path),
-                                                    );
-                                                }
+                                            if ui.button(tr(Key::ChooseConfigFile)).clicked()
+                                                && let Some(path) =
+                                                    pick_config_file(tr(Key::TextFileFilter))
+                                            {
+                                                app.custom_regex_file = Some(path.clone());
+                                                app.custom_regex_path =
+                                                    path.to_string_lossy().to_string();
+                                                app.custom_regex_status =
+                                                    Some(app.validate_custom_config(locale, &path));
                                             }
                                             if ui.button(tr(Key::ClearConfig)).clicked() {
                                                 app.custom_regex_file = None;
@@ -325,23 +390,16 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
 
                         ui.add_space(10.0);
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::ImportCss)).clicked() {
-                                if let Some(path) = FileDialog::new()
-                                    .add_filter("CSS", &["css"])
-                                    .pick_file()
-                                {
-                                    if let Ok(content) = std::fs::read_to_string(&path) {
-                                        app.text_style.custom_css = content;
-                                    }
-                                }
+                            if ui.button(tr(Key::ImportCss)).clicked()
+                                && let Some(path) = pick_css_import_file()
+                                && let Ok(content) = std::fs::read_to_string(&path)
+                            {
+                                app.text_style.custom_css = content;
                             }
-                            if ui.button(tr(Key::ExportCss)).clicked() {
-                                if let Some(path) = FileDialog::new()
-                                    .add_filter("CSS", &["css"])
-                                    .save_file()
-                                {
-                                    let _ = std::fs::write(&path, &app.text_style.custom_css);
-                                }
+                            if ui.button(tr(Key::ExportCss)).clicked()
+                                && let Some(path) = pick_css_export_file()
+                            {
+                                let _ = std::fs::write(&path, &app.text_style.custom_css);
                             }
                         });
 
@@ -350,19 +408,12 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                         ui.add_space(8.0);
                         ui.label(tr(Key::ChapterHeaderImage));
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::ChooseChapterHeader)).clicked() {
-                                if let Some(path) = FileDialog::new()
-                                    .add_filter(
-                                        tr(Key::PanelImages),
-                                        &["jpeg", "png", "webp", "jpg"],
-                                    )
-                                    .pick_file()
-                                {
-                                    app.chapter_header_image =
-                                        image_reader_from_path(locale, &path);
-                                    app.chapter_header_image_path =
-                                        path.to_string_lossy().to_string();
-                                }
+                            if ui.button(tr(Key::ChooseChapterHeader)).clicked()
+                                && let Some(path) =
+                                    pick_image_file(tr(Key::PanelImages), &["jpeg", "png", "webp", "jpg"])
+                            {
+                                app.chapter_header_image = image_reader_from_path(locale, &path);
+                                app.chapter_header_image_path = path.to_string_lossy().to_string();
                             }
                             if ui.button(tr(Key::ClearChapterHeader)).clicked() {
                                 app.chapter_header_image = ImageFileReader::default();
@@ -415,22 +466,17 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                             ui.color_edit_button_srgba(&mut app.text_style.font_color);
                         });
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::ChooseFont)).clicked() {
-                                if let Some(path) = FileDialog::new()
-                                    .add_filter(tr(Key::PanelFonts), &["ttf", "otf"])
-                                    .pick_file()
-                                {
-                                    match load_font_asset(&path) {
-                                        Ok(asset) => {
-                                            app.font_asset = Some(asset);
-                                            app.font_error = None;
-                                            app.text_style.font_path =
-                                                path.to_string_lossy().to_string();
-                                        }
-                                        Err(err) => {
-                                            app.font_error =
-                                                Some(t1(locale, Key::ReadFailed, err));
-                                        }
+                            if ui.button(tr(Key::ChooseFont)).clicked()
+                                && let Some(path) = pick_font_file(tr(Key::PanelFonts))
+                            {
+                                match load_font_asset(&path) {
+                                    Ok(asset) => {
+                                        app.font_asset = Some(asset);
+                                        app.font_error = None;
+                                        app.text_style.font_path = path.to_string_lossy().to_string();
+                                    }
+                                    Err(err) => {
+                                        app.font_error = Some(t1(locale, Key::ReadFailed, err));
                                     }
                                 }
                             }
@@ -447,16 +493,13 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                     }
                     PanelIndex::Images => {
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::AddImage)).clicked() {
-                                if let Some(path) = FileDialog::new()
-                                    .add_filter(
-                                        tr(Key::PanelImages),
-                                        &["jpeg", "png", "webp", "jpg", "gif"],
-                                    )
-                                    .pick_file()
-                                {
-                                    app.images.push(image_reader_from_path(locale, &path));
-                                }
+                            if ui.button(tr(Key::AddImage)).clicked()
+                                && let Some(path) = pick_image_file(
+                                    tr(Key::PanelImages),
+                                    &["jpeg", "png", "webp", "jpg", "gif"],
+                                )
+                            {
+                                app.images.push(image_reader_from_path(locale, &path));
                             }
                             ui.label(t1(locale, Key::TotalImages, app.images.len()));
                         });
@@ -519,17 +562,14 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
 
                         ui.add_space(8.0);
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::BatchImport)).clicked() {
-                                if let Some(paths) = FileDialog::new()
-                                    .add_filter(
-                                        tr(Key::PanelImages),
-                                        &["jpeg", "png", "webp", "jpg", "gif"],
-                                    )
-                                    .pick_files()
-                                {
-                                    for path in paths {
-                                        app.images.push(image_reader_from_path(locale, &path));
-                                    }
+                            if ui.button(tr(Key::BatchImport)).clicked()
+                                && let Some(paths) = pick_image_files(
+                                    tr(Key::PanelImages),
+                                    &["jpeg", "png", "webp", "jpg", "gif"],
+                                )
+                            {
+                                for path in paths {
+                                    app.images.push(image_reader_from_path(locale, &path));
                                 }
                             }
                             if ui.button(tr(Key::ClearAll)).clicked() {
@@ -556,10 +596,10 @@ pub(super) fn central_panel(app: &mut MainApp, ctx: &egui::Context) {
                         ui.label(tr(Key::OutputFolder));
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(&mut app.output_path);
-                            if ui.button(tr(Key::Browse)).clicked() {
-                                if let Some(path) = FileDialog::new().pick_folder() {
-                                    app.output_path = path.to_string_lossy().to_string();
-                                }
+                            if ui.button(tr(Key::Browse)).clicked()
+                                && let Some(path) = pick_folder()
+                            {
+                                app.output_path = path.to_string_lossy().to_string();
                             }
                         });
 

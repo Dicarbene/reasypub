@@ -23,7 +23,9 @@ pub(super) fn render_chapter(
     html.push('\n');
     html.push_str("<head>");
     html.push('\n');
-    html.push_str(r#"<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8"/>"#);
+    html.push_str(
+        r#"<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8"/>"#,
+    );
     html.push('\n');
     html.push_str(r#"<link rel="stylesheet" type="text/css" href="stylesheet.css"/>"#);
     html.push('\n');
@@ -39,8 +41,7 @@ pub(super) fn render_chapter(
     html.push('\n');
 
     if matches!(template, CssTemplate::Fantasy) {
-        if let Some((chapter_no, chapter_title)) =
-            split_chinese_chapter_title(chapter.title.trim())
+        if let Some((chapter_no, chapter_title)) = split_chinese_chapter_title(chapter.title.trim())
         {
             html.push_str("<div class=\"Header-image-dk\">");
             let fantasy_header_src = header_image
@@ -61,7 +62,10 @@ pub(super) fn render_chapter(
                 "<p class=\"nt\"><img class=\"emoji\" src=\"images/4star.webp\" alt=\"\"/> {} <img class=\"emoji\" src=\"images/4star.webp\" alt=\"\"/></p>\n",
                 escape_html(&chapter_no)
             ));
-            html.push_str(&format!("<p class=\"et\">CHAPTER{:02}</p>\n", chapter_index));
+            html.push_str(&format!(
+                "<p class=\"et\">CHAPTER{:02}</p>\n",
+                chapter_index
+            ));
             html.push_str(&format!(
                 "<p class=\"ct\"><img class=\"emoji1\" src=\"images/ttl.webp\" alt=\"\"/> {} <img class=\"emoji1\" src=\"images/ttr.webp\" alt=\"\"/></p>\n",
                 escape_html(&chapter_title)
@@ -217,7 +221,9 @@ pub(super) fn render_gallery(images: &[ImageAsset], language: &str, title: &str)
     html.push('\n');
     html.push_str("<head>");
     html.push('\n');
-    html.push_str(r#"<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8"/>"#);
+    html.push_str(
+        r#"<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8"/>"#,
+    );
     html.push('\n');
     html.push_str(r#"<link rel="stylesheet" type="text/css" href="stylesheet.css"/>"#);
     html.push('\n');
@@ -292,7 +298,9 @@ pub(super) fn render_text_cover(
     ));
     html.push('\n');
     html.push_str("<head>\n");
-    html.push_str(r#"<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8"/>"#);
+    html.push_str(
+        r#"<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=utf-8"/>"#,
+    );
     html.push('\n');
     html.push_str(r#"<link rel="stylesheet" type="text/css" href="stylesheet.css"/>"#);
     html.push('\n');
@@ -393,26 +401,28 @@ fn format_chapter_heading(line: &str, language: &str) -> (String, Option<String>
 
     if is_english || lower.starts_with("chapter ") {
         let mut parts = trimmed.split_whitespace();
-        if let Some(first) = parts.next() {
-            if first.eq_ignore_ascii_case("chapter") {
-                if let Some(num_token) = parts.next() {
-                    let digits: String = num_token
-                        .chars()
-                        .take_while(|c| c.is_ascii_digit())
-                        .collect();
-                    if let Ok(num) = digits.parse::<u32>() {
-                        let roman = to_roman(num);
-                        let mut rest = parts.collect::<Vec<_>>().join(" ");
-                        if rest.starts_with([':', '：', '-', '—']) {
-                            rest = rest.trim_start_matches([':', '：', '-', '—']).trim().to_string();
-                        }
-                        let label = format!("Chapter {}", roman);
-                        if rest.trim().is_empty() {
-                            return (label, None);
-                        }
-                        return (label, Some(rest));
-                    }
+        if let Some(first) = parts.next()
+            && first.eq_ignore_ascii_case("chapter")
+            && let Some(num_token) = parts.next()
+        {
+            let digits: String = num_token
+                .chars()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
+            if let Ok(num) = digits.parse::<u32>() {
+                let roman = to_roman(num);
+                let mut rest = parts.collect::<Vec<_>>().join(" ");
+                if rest.starts_with([':', '：', '-', '—']) {
+                    rest = rest
+                        .trim_start_matches([':', '：', '-', '—'])
+                        .trim()
+                        .to_string();
                 }
+                let label = format!("Chapter {}", roman);
+                if rest.trim().is_empty() {
+                    return (label, None);
+                }
+                return (label, Some(rest));
             }
         }
     }
@@ -502,8 +512,8 @@ pub(super) fn split_paragraphs(content: &str) -> Vec<Vec<String>> {
 }
 
 fn ends_with_sentence_punct(text: &str) -> bool {
-    let mut chars = text.chars().rev();
-    while let Some(ch) = chars.next() {
+    let chars = text.chars().rev();
+    for ch in chars {
         if matches!(
             ch,
             '”' | '’' | '）' | '】' | '》' | '」' | '』' | '〉' | ')' | ']' | '}' | '"' | '\''

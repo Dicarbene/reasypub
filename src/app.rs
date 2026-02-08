@@ -1,8 +1,8 @@
 use crate::components::chapter_editor::ChapterEditorState;
 use crate::conversion::{ConversionFacade, ConversionRequest};
 use crate::{
-    t, t1, BookInfo, ConversionMethod, FontAsset, ImageFileReader, Key, Locale, PanelIndex,
-    TextFileReader, TextStyle,
+    BookInfo, ConversionMethod, FontAsset, ImageFileReader, Key, Locale, PanelIndex,
+    TextFileReader, TextStyle, t, t1,
 };
 use regex::Regex;
 use std::path::{Path, PathBuf};
@@ -19,10 +19,10 @@ use app_helpers::{
 #[serde(default)] // 如果添加新字段，在反序列化旧状态时给予默认值
 pub struct MainApp {
     // 基础数据结构体
-    input_txt_path: String, // 输入文本文件路径
-    input_image_path: String, // 输入图片路径
+    input_txt_path: String,            // 输入文本文件路径
+    input_image_path: String,          // 输入图片路径
     chapter_header_image_path: String, // 章头图路径
-    custom_regex_path: String, // 自定义正则配置文件路径
+    custom_regex_path: String,         // 自定义正则配置文件路径
     #[serde(skip)]
     custom_regex_pattern: String, // 自定义正则表达式
     #[serde(skip)]
@@ -31,10 +31,10 @@ pub struct MainApp {
     custom_regex_status: Option<(bool, String)>,
     // 转换配置
     available_methods: Vec<ConversionMethod>, // 可用的转换方法（使用枚举）
-    selected_method: ConversionMethod, // 当前选中的转换方法
-    available_panels: Vec<PanelIndex>, // 可用的面板索引
-    panel_index: PanelIndex, // 当前面板索引
-    book_info: BookInfo, // 书籍信息
+    selected_method: ConversionMethod,        // 当前选中的转换方法
+    available_panels: Vec<PanelIndex>,        // 可用的面板索引
+    panel_index: PanelIndex,                  // 当前面板索引
+    book_info: BookInfo,                      // 书籍信息
     // 版式与字体配置
     text_style: TextStyle,
     // 界面主题
@@ -48,7 +48,7 @@ pub struct MainApp {
     #[serde(skip)]
     inline_toc: bool, // 是否插入目录页
     // 杂项配置
-    output_path: String, // 输出路径
+    output_path: String,       // 输出路径
     filename_template: String, // 文件命名模板
     // 编辑器状态
     show_editor: bool, // 是否显示编辑器
@@ -107,19 +107,19 @@ impl Default for MainApp {
             custom_regex_file: None,
             custom_regex_status: None,
             available_methods: vec![
-                ConversionMethod::SimpleRules, // 简单规则
-                ConversionMethod::Regex, // 正则表达式
+                ConversionMethod::SimpleRules,  // 简单规则
+                ConversionMethod::Regex,        // 正则表达式
                 ConversionMethod::CustomConfig, // 自定义配置
             ],
             selected_method: ConversionMethod::Regex, // 默认使用正则表达式方法
             available_panels: vec![
-                PanelIndex::Chapter, // 章节面板
-                PanelIndex::Format, // 版式面板
-                PanelIndex::Font, // 字体面板
+                PanelIndex::Chapter,     // 章节面板
+                PanelIndex::Format,      // 版式面板
+                PanelIndex::Font,        // 字体面板
                 PanelIndex::PublishInfo, // 出版信息面板
-                PanelIndex::CSS, // CSS 面板
-                PanelIndex::Images, // 插图面板
-                PanelIndex::Misc, // 杂项面板
+                PanelIndex::CSS,         // CSS 面板
+                PanelIndex::Images,      // 插图面板
+                PanelIndex::Misc,        // 杂项面板
             ],
             panel_index: PanelIndex::Chapter, // 默认显示章节面板
             book_info: BookInfo::default(),
@@ -172,22 +172,22 @@ impl MainApp {
             .entry(egui::FontFamily::Proportional)
             .or_default()
             .insert(0, "stdg".to_owned());
-        
+
         // 为等宽字体也设置中文字体支持
         fonts
             .families
             .entry(egui::FontFamily::Monospace)
             .or_default()
             .insert(0, "stdg".to_owned());
-        
+
         cc.egui_ctx.set_fonts(fonts);
 
         // 加载之前的应用状态（如果有）
         // 注意：必须启用 `persistence` 功能才能使用
-/*         if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        }
- */
+        /*         if let Some(storage) = cc.storage {
+                   return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+               }
+        */
         let app = Self::default();
         apply_theme(&cc.egui_ctx, app.theme_mode);
         app
@@ -207,8 +207,7 @@ impl MainApp {
             let signature = self.preview_signature();
             self.chapter_editor.update_stale(signature);
             if self.chapter_editor.stale {
-                self.conversion_error =
-                    Some(t(self.locale, Key::ChapterWarningStale).to_string());
+                self.conversion_error = Some(t(self.locale, Key::ChapterWarningStale).to_string());
                 self.show_conversion_modal = true;
                 return;
             }
@@ -356,8 +355,6 @@ impl eframe::App for MainApp {
     }
 
     /// 每帧更新都调用
-    
-    
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         apply_theme(ctx, self.theme_mode);
         ui::top_panel(self, ctx);
@@ -366,6 +363,4 @@ impl eframe::App for MainApp {
         ui::central_panel(self, ctx);
         ui::dialogs(self, ctx);
     }
-
-
 }

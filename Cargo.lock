@@ -3429,6 +3429,7 @@ dependencies = [
  "regex",
  "rfd",
  "serde",
+ "uuid",
  "wasm-bindgen-futures",
  "web-sys",
  "zip",

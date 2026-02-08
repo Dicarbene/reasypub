@@ -1,4 +1,4 @@
-﻿use std::fs::{self, File};
+use std::fs::{self, File};
 use std::io::Cursor;
 use std::path::PathBuf;
 
@@ -73,7 +73,9 @@ pub fn build_epub(
     options: &EpubBuildOptions,
 ) -> Result<String, BuildError> {
     if chapters.is_empty() {
-        return Err(BuildError::InvalidInput("No chapters provided.".to_string()));
+        return Err(BuildError::InvalidInput(
+            "No chapters provided.".to_string(),
+        ));
     }
 
     let output_dir = normalize_output_dir(&options.output_dir)?;
@@ -120,14 +122,14 @@ pub fn build_epub(
 
     if matches!(options.style.css_template, CssTemplate::Folio) {
         builder.add_resource(
-            "ornaments/folio-divider.svg".to_string(),
+            "ornaments/folio-divider.svg",
             Cursor::new(folio_divider_svg().as_bytes()),
             "image/svg+xml",
         )?;
     }
     if matches!(options.style.css_template, CssTemplate::Fantasy) {
         builder.add_resource(
-            "ornaments/fantasy-divider.svg".to_string(),
+            "ornaments/fantasy-divider.svg",
             Cursor::new(fantasy_divider_svg().as_bytes()),
             "image/svg+xml",
         )?;
@@ -146,10 +148,10 @@ pub fn build_epub(
     };
 
     if options.cover.is_none() {
-        let cover_html = render_text_cover(&options.book_info, language, options.style.css_template);
+        let cover_html =
+            render_text_cover(&options.book_info, language, options.style.css_template);
         builder.add_content(
-            EpubContent::new("cover.xhtml", cover_html.as_bytes())
-                .reftype(ReferenceType::Cover),
+            EpubContent::new("cover.xhtml", cover_html.as_bytes()).reftype(ReferenceType::Cover),
         )?;
     }
 

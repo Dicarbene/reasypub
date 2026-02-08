@@ -1,10 +1,10 @@
-﻿use std::path::{Path, PathBuf};
+use std::path::{Path, PathBuf};
 
-use crate::{t, t1, Key};
 use crate::components::chapter_editor::ChapterEditorInput;
+use crate::{Key, t, t1};
 
-use super::super::app_helpers::open_in_file_manager;
 use super::super::MainApp;
+use super::super::app_helpers::open_in_file_manager;
 
 pub(super) fn dialogs(app: &mut MainApp, ctx: &egui::Context) {
     let locale = app.locale;
@@ -18,12 +18,11 @@ pub(super) fn dialogs(app: &mut MainApp, ctx: &egui::Context) {
             .default_height(600.0)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    if ui.button(tr(Key::Save)).clicked() {
-                        if let Some(path) = &app.input_file.path {
-                            if let Err(e) = std::fs::write(path, &app.input_file.content) {
-                                eprintln!("Save failed: {}", e);
-                            }
-                        }
+                    if ui.button(tr(Key::Save)).clicked()
+                        && let Some(path) = &app.input_file.path
+                        && let Err(e) = std::fs::write(path, &app.input_file.content)
+                    {
+                        eprintln!("Save failed: {}", e);
                     }
                     if ui.button(tr(Key::Close)).clicked() {
                         app.show_editor = false;
@@ -41,7 +40,11 @@ pub(super) fn dialogs(app: &mut MainApp, ctx: &egui::Context) {
                     });
 
                 ui.add_space(10.0);
-                ui.label(t1(locale, Key::Chars, app.input_file.content.chars().count()));
+                ui.label(t1(
+                    locale,
+                    Key::Chars,
+                    app.input_file.content.chars().count(),
+                ));
             });
     }
 
@@ -73,18 +76,14 @@ pub(super) fn dialogs(app: &mut MainApp, ctx: &egui::Context) {
 
                         ui.label(tr(Key::OutputFile));
                         ui.add_space(5.0);
-                        ui.label(
-                            egui::RichText::new(output_path)
-                                .size(14.0)
-                                .monospace(),
-                        );
+                        ui.label(egui::RichText::new(output_path).size(14.0).monospace());
                         ui.add_space(20.0);
 
                         ui.horizontal(|ui| {
-                            if ui.button(tr(Key::OpenFolder)).clicked() {
-                                if let Some(path) = PathBuf::from(output_path).parent() {
-                                    let _ = open_in_file_manager(path);
-                                }
+                            if ui.button(tr(Key::OpenFolder)).clicked()
+                                && let Some(path) = PathBuf::from(output_path).parent()
+                            {
+                                let _ = open_in_file_manager(path);
                             }
                             if ui.button(tr(Key::OpenFile)).clicked() {
                                 let _ = open_in_file_manager(Path::new(output_path));

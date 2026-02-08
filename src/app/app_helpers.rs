@@ -1,8 +1,9 @@
 use bytes::Bytes;
+#[cfg(not(target_arch = "wasm32"))]
 use rfd::FileDialog;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use crate::{t, t1, BookInfo, FontAsset, ImageAsset, ImageFileReader, Key, Locale, TextFileReader};
+use crate::{BookInfo, FontAsset, ImageAsset, ImageFileReader, Key, Locale, TextFileReader, t, t1};
 
 use super::ThemeMode;
 
@@ -64,9 +65,13 @@ pub(super) fn card(ui: &mut egui::Ui, title: &str, add_contents: impl FnOnce(&mu
 pub(super) fn primary_button(ui: &mut egui::Ui, text: &str) -> egui::Response {
     let accent = ui.visuals().selection.bg_fill;
     ui.add(
-        egui::Button::new(egui::RichText::new(text).color(egui::Color32::WHITE).strong())
-            .fill(accent)
-            .corner_radius(egui::CornerRadius::same(6)),
+        egui::Button::new(
+            egui::RichText::new(text)
+                .color(egui::Color32::WHITE)
+                .strong(),
+        )
+        .fill(accent)
+        .corner_radius(egui::CornerRadius::same(6)),
     )
 }
 
@@ -79,6 +84,8 @@ pub(super) fn display_or_placeholder(value: &str, fallback: &str) -> String {
 }
 
 pub(super) fn open_in_file_manager(path: &Path) -> std::io::Result<()> {
+    let _ = path;
+
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("cmd")
@@ -98,6 +105,18 @@ pub(super) fn open_in_file_manager(path: &Path) -> std::io::Result<()> {
     }
     #[allow(unreachable_code)]
     Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn pick_text_file(filter_name: &str) -> Option<PathBuf> {
+    FileDialog::new()
+        .add_filter(filter_name, &["txt"])
+        .pick_file()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn pick_text_file(_filter_name: &str) -> Option<PathBuf> {
+    None
 }
 
 pub(super) fn cover_asset_from_reader(reader: &ImageFileReader) -> Option<ImageAsset> {
@@ -255,13 +274,13 @@ fn parse_filename_to_book_info(filename: &str) -> (String, String) {
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or(filename);
-    
+
     let mut title = String::new();
     let mut author = String::new();
-    
+
     // 尝试不同的分隔符
     let separators = ['_', '-', ' ', '—', '–', '·'];
-    
+
     for sep in separators {
         if let Some((first, second)) = stem.split_once(sep) {
             title = first.trim().to_string();
@@ -269,12 +288,12 @@ fn parse_filename_to_book_info(filename: &str) -> (String, String) {
             break;
         }
     }
-    
+
     // 如果没有找到分隔符，整个文件名作为书名
     if title.is_empty() {
         title = stem.to_string();
     }
-    
+
     (title, author)
 }
 
@@ -287,33 +306,30 @@ pub(super) fn readtxt(
     book_info: &mut BookInfo,
 ) {
     ui.horizontal(|ui| {
-        if ui.button(t(locale, Key::OpenTextFile)).clicked() {
-            if let Some(path) = FileDialog::new()
-                .add_filter(t(locale, Key::TextFileFilter), &["txt"])
-                .pick_file()
-            {
-                match std::fs::read_to_string(&path) {
-                    Ok(content) => {
-                        input_txt.content = content;
-                        input_txt.error = None;
-                        input_txt.path = Some(path.clone());
-                        // txt路径显示
-                        *input_txt_path = path.to_string_lossy().to_string();
-                        
-                        // 从文件名中自动提取书名和作者
-                        if let Some(filename) = path.file_name().and_then(|s| s.to_str()) {
-                            let (title, author) = parse_filename_to_book_info(filename);
-                            if book_info.title.trim().is_empty() {
-                                book_info.title = title;
-                            }
-                            if book_info.author.trim().is_empty() {
-                                book_info.author = author;
-                            }
+        if ui.button(t(locale, Key::OpenTextFile)).clicked()
+            && let Some(path) = pick_text_file(t(locale, Key::TextFileFilter))
+        {
+            match std::fs::read_to_string(&path) {
+                Ok(content) => {
+                    input_txt.content = content;
+                    input_txt.error = None;
+                    input_txt.path = Some(path.clone());
+                    // txt路径显示
+                    *input_txt_path = path.to_string_lossy().to_string();
+
+                    // 从文件名中自动提取书名和作者
+                    if let Some(filename) = path.file_name().and_then(|s| s.to_str()) {
+                        let (title, author) = parse_filename_to_book_info(filename);
+                        if book_info.title.trim().is_empty() {
+                            book_info.title = title;
+                        }
+                        if book_info.author.trim().is_empty() {
+                            book_info.author = author;
                         }
                     }
-                    Err(e) => {
-                        input_txt.error = Some(t1(locale, Key::ReadFailed, e));
-                    }
+                }
+                Err(e) => {
+                    input_txt.error = Some(t1(locale, Key::ReadFailed, e));
                 }
             }
         }
@@ -363,7 +379,11 @@ pub(super) fn show_image_ui(ui: &mut egui::Ui, locale: Locale, reader: &mut Imag
 
         if let Some(texture) = &reader.texture {
             // 显示图片（自动缩放填充容器）
-            ui.add(egui::Image::new(texture).max_width(200.0).corner_radius(10.0));
+            ui.add(
+                egui::Image::new(texture)
+                    .max_width(200.0)
+                    .corner_radius(10.0),
+            );
         } else if let Some(err) = &reader.error {
             // 显示错误信息
             ui.colored_label(egui::Color32::RED, err);
@@ -373,7 +393,6 @@ pub(super) fn show_image_ui(ui: &mut egui::Ui, locale: Locale, reader: &mut Imag
         }
     });
 }
-
 
 #[cfg(test)]
 mod tests {

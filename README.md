@@ -48,6 +48,8 @@ Reasypub is a desktop app that converts TXT files into EPUB, with chapter splitt
 - 多种 CSS 模板：Classic/Modern/Clean/Elegant/Folio/Fantasy/Minimal
 - 模板 + 自定义 CSS 叠加 / Template + custom CSS
 - 自定义 CSS 会追加到模板之后 / Custom CSS is appended after template CSS
+- 章头图（全书统一，可选全屏）/ Global chapter header image with optional full-bleed
+- 段落标注 `[class=...]` 与额外 class 输入 / Paragraph class markers + extra class fields
 
 ### 7) 输出与命名 / Output & Naming
 - 输出路径可配置 / Output folder configurable
@@ -83,6 +85,16 @@ Reasypub is a desktop app that converts TXT files into EPUB, with chapter splitt
 **转换结果弹窗 / Result Modal**
 - 输出文件路径
 - 打开文件/文件夹按钮
+
+---
+
+## 截图 / Screenshots
+
+![Home](tests/snapshots/home_zh.png)
+
+![CSS Panel](tests/snapshots/panel_css.png)
+
+![Chapter Editor](tests/snapshots/chapter_editor.png)
 
 ---
 
@@ -263,6 +275,12 @@ trunk build
 ./check.sh
 ```
 
+Windows PowerShell:
+
+```powershell
+./check.ps1
+```
+
 ### 代码结构 / Code Layout
 
 - `src/app.rs`：主 UI 与状态管理 / Main UI and state
@@ -303,6 +321,12 @@ cargo test --lib
 
 ```bash
 ./check.sh
+```
+
+PowerShell:
+
+```powershell
+./check.ps1
 ```
 
 ### 代码风格 / Code Style

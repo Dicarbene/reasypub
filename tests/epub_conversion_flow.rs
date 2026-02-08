@@ -50,8 +50,7 @@ fn extract_creator(text: &str) -> Option<String> {
 }
 
 fn extract_meta_content(text: &str, name: &str) -> Option<String> {
-    let re = Regex::new(&format!(r#"<meta name="{name}" content="([^"]*)"\s*/?>"#))
-        .expect("regex");
+    let re = Regex::new(&format!(r#"<meta name="{name}" content="([^"]*)"\s*/?>"#)).expect("regex");
     re.captures(text)
         .and_then(|caps| caps.get(1).map(|m| m.as_str().to_string()))
 }
@@ -104,17 +103,11 @@ fn assert_chapter_contains(epub: &Path, index: usize, needle: &str) {
     let chapter = zip_read_to_string(epub, &chapter_path(index));
     assert!(
         chapter.contains(needle),
-        "chapter_{} missing expected content: {}",
-        format!("{:04}", index),
-        needle
+        "chapter_{index:04} missing expected content: {needle}"
     );
 }
 
-fn split_chapters(
-    text: &str,
-    method: ConversionMethod,
-    custom_regex: &str,
-) -> Vec<ChapterDraft> {
+fn split_chapters(text: &str, method: ConversionMethod, custom_regex: &str) -> Vec<ChapterDraft> {
     let strategy = StrategyFactory::create(method, custom_regex, None).expect("strategy");
     strategy.split(text).expect("split")
 }
@@ -140,11 +133,17 @@ fn assert_chapter_count_matches_toc(epub: &Path) {
     let chapters = chapter_entries(&entries);
     let nav = zip_read_to_string(epub, "nav.xhtml");
     let mut toc_hrefs = nav_hrefs(&nav);
-    let mut toc_chapters = toc_hrefs.iter().filter(|href| is_chapter_href(href)).count();
+    let mut toc_chapters = toc_hrefs
+        .iter()
+        .filter(|href| is_chapter_href(href))
+        .count();
     if toc_chapters == 0 {
         let ncx = zip_read_to_string(epub, "toc.ncx");
         toc_hrefs = toc_ncx_hrefs(&ncx);
-        toc_chapters = toc_hrefs.iter().filter(|href| is_chapter_href(href)).count();
+        toc_chapters = toc_hrefs
+            .iter()
+            .filter(|href| is_chapter_href(href))
+            .count();
     }
     assert_eq!(chapters.len(), toc_chapters);
 }
@@ -189,7 +188,12 @@ fn toc_titles_from_text(text: &str) -> Vec<String> {
             continue;
         }
         let len = line.chars().count();
-        if len > 12 || line.contains('。') || line.contains('，') || line.contains('？') || line.contains('！') {
+        if len > 12
+            || line.contains('。')
+            || line.contains('，')
+            || line.contains('？')
+            || line.contains('！')
+        {
             break;
         }
         if seen.insert(line.to_string()) {
@@ -276,12 +280,16 @@ fn export_epubs_for_manual_check() {
             String::new()
         };
 
-        let mut book = BookInfo::default();
-        book.title = title.to_string();
-        book.author = author.to_string();
-        book.language = "zh-CN".to_string();
-        let mut style = TextStyle::default();
-        style.css_template = template;
+        let book = BookInfo {
+            title: title.to_string(),
+            author: author.to_string(),
+            language: "zh-CN".to_string(),
+            ..Default::default()
+        };
+        let style = TextStyle {
+            css_template: template,
+            ..Default::default()
+        };
 
         let request = ConversionRequest {
             text,
@@ -295,6 +303,8 @@ fn export_epubs_for_manual_check() {
             cover: None,
             images: Vec::new(),
             font: None,
+            chapter_header_image: None,
+            chapter_header_fullbleed: false,
             chapters_override: None,
             include_images_section: false,
             inline_toc: true,
@@ -397,10 +407,10 @@ fn first_non_empty_token(text: &str) -> Option<String> {
         if trimmed.is_empty() {
             continue;
         }
-        if let Some(token) = trimmed.split_whitespace().next() {
-            if !token.is_empty() {
-                return Some(token.to_string());
-            }
+        if let Some(token) = trimmed.split_whitespace().next()
+            && !token.is_empty()
+        {
+            return Some(token.to_string());
         }
         let token: String = trimmed.chars().take(6).collect();
         if !token.is_empty() {
@@ -427,15 +437,16 @@ fn chinese_novel_txt_conversion_flow() {
         .join("novel_zh.txt");
     let text = read_fixture_text(&fixture);
 
-    let mut book = BookInfo::default();
-    book.title = "雾桥夜灯".to_string();
-    book.author = "测试作者".to_string();
-    book.language = "zh-CN".to_string();
-    book.publisher = "测试出版社".to_string();
-    book.isbn = "ISBN-0000".to_string();
-    book.publish_date = "2025-01-01".to_string();
-    book.category = "幻想".to_string();
-    book.description = "测试描述".to_string();
+    let book = BookInfo {
+        title: "雾桥夜灯".to_string(),
+        author: "测试作者".to_string(),
+        language: "zh-CN".to_string(),
+        publisher: "测试出版社".to_string(),
+        isbn: "ISBN-0000".to_string(),
+        publish_date: "2025-01-01".to_string(),
+        category: "幻想".to_string(),
+        description: "测试描述".to_string(),
+    };
 
     let out_dir = temp_output_dir("reasypub-flow");
     let request = ConversionRequest {
@@ -450,6 +461,8 @@ fn chinese_novel_txt_conversion_flow() {
         cover: None,
         images: Vec::new(),
         font: None,
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: false,
         inline_toc: true,
@@ -484,18 +497,21 @@ fn chinese_novel_full_pipeline_with_assets() {
         .join("novel_zh.txt");
     let text = read_fixture_text(&fixture);
 
-    let mut book = BookInfo::default();
-    book.title = "雾桥夜灯".to_string();
-    book.author = "测试作者".to_string();
-    book.language = "zh-CN".to_string();
-    book.publisher = "测试出版社".to_string();
-    book.isbn = "ISBN-0000".to_string();
-    book.publish_date = "2025-01-01".to_string();
-    book.category = "幻想".to_string();
-    book.description = "测试描述".to_string();
+    let book = BookInfo {
+        title: "雾桥夜灯".to_string(),
+        author: "测试作者".to_string(),
+        language: "zh-CN".to_string(),
+        publisher: "测试出版社".to_string(),
+        isbn: "ISBN-0000".to_string(),
+        publish_date: "2025-01-01".to_string(),
+        category: "幻想".to_string(),
+        description: "测试描述".to_string(),
+    };
 
-    let mut style = TextStyle::default();
-    style.custom_css = "p { letter-spacing: 0.2px; }".to_string();
+    let style = TextStyle {
+        custom_css: "p { letter-spacing: 0.2px; }".to_string(),
+        ..Default::default()
+    };
 
     let cover = ImageAsset {
         name: "cover.jpg".to_string(),
@@ -537,6 +553,8 @@ fn chinese_novel_full_pipeline_with_assets() {
         cover: Some(cover),
         images,
         font: Some(font),
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: true,
         inline_toc: true,
@@ -555,11 +573,23 @@ fn chinese_novel_full_pipeline_with_assets() {
     assert!(stylesheet.contains("letter-spacing: 0.2px"));
 
     let opf = zip_read_to_string(output, ".opf");
-    assert_eq!(extract_tag_value(&opf, "dc:title").as_deref(), Some("雾桥夜灯"));
-    assert_eq!(extract_tag_value(&opf, "dc:language").as_deref(), Some("zh-CN"));
+    assert_eq!(
+        extract_tag_value(&opf, "dc:title").as_deref(),
+        Some("雾桥夜灯")
+    );
+    assert_eq!(
+        extract_tag_value(&opf, "dc:language").as_deref(),
+        Some("zh-CN")
+    );
     assert_eq!(extract_creator(&opf).as_deref(), Some("测试作者"));
-    assert_eq!(extract_tag_value(&opf, "dc:subject").as_deref(), Some("幻想"));
-    assert_eq!(extract_tag_value(&opf, "dc:description").as_deref(), Some("测试描述"));
+    assert_eq!(
+        extract_tag_value(&opf, "dc:subject").as_deref(),
+        Some("幻想")
+    );
+    assert_eq!(
+        extract_tag_value(&opf, "dc:description").as_deref(),
+        Some("测试描述")
+    );
     assert_eq!(
         extract_meta_content(&opf, "publisher").as_deref(),
         Some("测试出版社")
@@ -587,9 +617,21 @@ fn chinese_novel_full_pipeline_with_assets() {
             .collect::<Vec<_>>()
     };
     assert!(entries.iter().any(|name| name.ends_with("cover.jpg")));
-    assert!(entries.iter().any(|name| name.ends_with("images/scene1.png")));
-    assert!(entries.iter().any(|name| name.ends_with("images/scene2.png")));
-    assert!(entries.iter().any(|name| name.ends_with("fonts/custom.ttf")));
+    assert!(
+        entries
+            .iter()
+            .any(|name| name.ends_with("images/scene1.png"))
+    );
+    assert!(
+        entries
+            .iter()
+            .any(|name| name.ends_with("images/scene2.png"))
+    );
+    assert!(
+        entries
+            .iter()
+            .any(|name| name.ends_with("fonts/custom.ttf"))
+    );
 
     let _ = std::fs::remove_file(output);
     let _ = std::fs::remove_dir_all(&out_dir);
@@ -611,14 +653,16 @@ fn fixtures_txt_conversion_flow() {
         let text = read_fixture_text(&path);
         let token = first_non_empty_token(&text).expect("token");
 
-        let mut book = BookInfo::default();
-        book.title = path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("Untitled")
-            .to_string();
-        book.author = "测试作者".to_string();
-        book.language = "zh-CN".to_string();
+        let book = BookInfo {
+            title: path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("Untitled")
+                .to_string(),
+            author: "测试作者".to_string(),
+            language: "zh-CN".to_string(),
+            ..Default::default()
+        };
 
         let out_dir = temp_output_dir("reasypub-fixture");
         let request = ConversionRequest {
@@ -633,6 +677,8 @@ fn fixtures_txt_conversion_flow() {
             cover: None,
             images: Vec::new(),
             font: None,
+            chapter_header_image: None,
+            chapter_header_fullbleed: false,
             chapters_override: None,
             include_images_section: false,
             inline_toc: true,
@@ -664,10 +710,12 @@ fn hongloumeng_custom_case() {
     assert!(chapters.len() >= 120);
 
     let out_dir = temp_output_dir("reasypub-hlm");
-    let mut book = BookInfo::default();
-    book.title = "红楼梦".to_string();
-    book.author = "曹雪芹".to_string();
-    book.language = "zh-CN".to_string();
+    let book = BookInfo {
+        title: "红楼梦".to_string(),
+        author: "曹雪芹".to_string(),
+        language: "zh-CN".to_string(),
+        ..Default::default()
+    };
 
     let request = ConversionRequest {
         text,
@@ -681,6 +729,8 @@ fn hongloumeng_custom_case() {
         cover: None,
         images: Vec::new(),
         font: None,
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: false,
         inline_toc: true,
@@ -716,10 +766,12 @@ fn chulong_custom_case() {
     assert!(chapters.len() >= 500);
 
     let out_dir = temp_output_dir("reasypub-chulong");
-    let mut book = BookInfo::default();
-    book.title = "黜龙".to_string();
-    book.author = "榴弹怕水".to_string();
-    book.language = "zh-CN".to_string();
+    let book = BookInfo {
+        title: "黜龙".to_string(),
+        author: "榴弹怕水".to_string(),
+        language: "zh-CN".to_string(),
+        ..Default::default()
+    };
 
     let request = ConversionRequest {
         text,
@@ -733,6 +785,8 @@ fn chulong_custom_case() {
         cover: None,
         images: Vec::new(),
         font: None,
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: false,
         inline_toc: true,
@@ -778,10 +832,12 @@ fn shubuqing_custom_case() {
     assert!(chapters.len() <= toc_titles.len() + 1);
 
     let out_dir = temp_output_dir("reasypub-shubuqing");
-    let mut book = BookInfo::default();
-    book.title = "数不清的井".to_string();
-    book.author = "京极夏彦".to_string();
-    book.language = "zh-CN".to_string();
+    let book = BookInfo {
+        title: "数不清的井".to_string(),
+        author: "京极夏彦".to_string(),
+        language: "zh-CN".to_string(),
+        ..Default::default()
+    };
 
     let request = ConversionRequest {
         text: cleaned_text,
@@ -795,6 +851,8 @@ fn shubuqing_custom_case() {
         cover: None,
         images: Vec::new(),
         font: None,
+        chapter_header_image: None,
+        chapter_header_fullbleed: false,
         chapters_override: None,
         include_images_section: false,
         inline_toc: true,
