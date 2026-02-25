@@ -263,6 +263,20 @@ fn build_stylesheet_includes_fantasy_overrides() {
 }
 
 #[test]
+fn build_stylesheet_enforces_selected_font_color_on_titles() {
+    let style = TextStyle {
+        font_color: egui::Color32::from_rgb(0x12, 0x34, 0x56),
+        ..Default::default()
+    };
+    let css = build_stylesheet(&style, None).expect("css");
+    assert!(css.contains("/* === enforce text color === */"));
+    assert!(css.contains(".cover-title"));
+    assert!(css.contains("p.nt"));
+    assert!(css.contains("{ color: #123456; }"));
+    assert!(css.contains(".chapter-paragraph-first::first-letter { color: #123456; }"));
+}
+
+#[test]
 fn generate_filename_sanitizes_and_appends_extension() {
     let book = BookInfo {
         title: "My/Book".to_string(),

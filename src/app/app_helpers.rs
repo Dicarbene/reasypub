@@ -3,6 +3,15 @@ use bytes::Bytes;
 use rfd::FileDialog;
 use std::path::{Path, PathBuf};
 
+#[cfg(target_arch = "wasm32")]
+use js_sys::{Array, Uint8Array};
+#[cfg(target_arch = "wasm32")]
+use std::cell::RefCell;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::{JsCast, JsValue, closure::Closure};
+#[cfg(target_arch = "wasm32")]
+use web_sys::{Blob, BlobPropertyBag, FileReader, HtmlAnchorElement, HtmlInputElement, Url};
+
 use crate::{BookInfo, FontAsset, ImageAsset, ImageFileReader, Key, Locale, TextFileReader, t, t1};
 
 use super::ThemeMode;
@@ -22,6 +31,11 @@ pub(super) fn apply_theme(ctx: &egui::Context, mode: ThemeMode) {
     visuals.hyperlink_color = accent;
     visuals.widgets.active.bg_fill = accent;
     visuals.widgets.hovered.bg_fill = accent.gamma_multiply(0.9);
+    if mode == ThemeMode::Light {
+        visuals.widgets.hovered.fg_stroke.color = egui::Color32::WHITE;
+        visuals.widgets.active.fg_stroke.color = egui::Color32::WHITE;
+        visuals.selection.stroke.color = egui::Color32::WHITE;
+    }
     visuals.window_corner_radius = egui::CornerRadius::same(12);
     visuals.panel_fill = if mode == ThemeMode::Light {
         egui::Color32::from_rgb(248, 249, 250)
@@ -508,6 +522,38 @@ mod tests {
         assert_eq!(
             display_or_placeholder(" Title ", "Fallback"),
             "Title".to_string()
+        );
+    }
+
+    #[test]
+    fn apply_theme_light_highlight_text_is_white() {
+        let ctx = egui::Context::default();
+        apply_theme(&ctx, ThemeMode::Light);
+        let visuals = ctx.style().visuals.clone();
+
+        assert_eq!(visuals.widgets.hovered.fg_stroke.color, egui::Color32::WHITE);
+        assert_eq!(visuals.widgets.active.fg_stroke.color, egui::Color32::WHITE);
+        assert_eq!(visuals.selection.stroke.color, egui::Color32::WHITE);
+    }
+
+    #[test]
+    fn apply_theme_dark_keeps_default_highlight_text() {
+        let ctx = egui::Context::default();
+        apply_theme(&ctx, ThemeMode::Dark);
+        let visuals = ctx.style().visuals.clone();
+        let default_dark = egui::Visuals::dark();
+
+        assert_eq!(
+            visuals.widgets.hovered.fg_stroke.color,
+            default_dark.widgets.hovered.fg_stroke.color
+        );
+        assert_eq!(
+            visuals.widgets.active.fg_stroke.color,
+            default_dark.widgets.active.fg_stroke.color
+        );
+        assert_eq!(
+            visuals.selection.stroke.color,
+            default_dark.selection.stroke.color
         );
     }
 }

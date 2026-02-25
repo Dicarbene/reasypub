@@ -137,6 +137,16 @@ pub(super) fn build_stylesheet(
         css.push_str(".cover-meta { letter-spacing: 0.26em; color: #6b5b4b; }\n");
     }
 
+    css.push_str("\n\n/* === enforce text color === */\n");
+    css.push_str(&format!(
+        "h1, h2, h3, h4, h5, h6, li, blockquote, figcaption, .chapter-label, .cover-title, .cover-subtitle, .cover-author, .cover-meta, p.nt, p.et, p.ct {{ color: {}; }}\n",
+        text_color
+    ));
+    css.push_str(&format!(
+        ".chapter-paragraph-first::first-letter {{ color: {}; }}\n",
+        text_color
+    ));
+
     if let Some(font_asset) = font {
         css.push_str("\n\n/* === embedded font === */\n");
         css.push_str(&format!(
